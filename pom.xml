@@ -9,10 +9,13 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>threadpool-core</module>
-        <module>threadpool-common</module>
-        <module>threadpool-spring</module>
-        <module>threadpool-monitor</module>
+        <module>dynamic-threadpool-core</module>
+        <module>dynamic-threadpool-common</module>
+        <module>dynamic-threadpool-monitor</module>
+        <module>dynamic-threadpool-spring</module>
+        <module>dynamic-threadpool-spring-boot-starter</module>
+        <module>dynamic-threadpool-spring-demo</module>
+        <module>dynamic-threadpool-spring-boot-starter-demo</module>
     </modules>
 
     <name>dynamic-threadpool</name>
@@ -46,6 +49,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <version>1.7.25</version>
         </dependency>
 
         <dependency>

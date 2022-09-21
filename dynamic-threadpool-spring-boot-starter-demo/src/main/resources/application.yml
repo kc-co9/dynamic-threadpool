@@ -1,0 +1,49 @@
+server:
+  port: 9070
+  servlet:
+    context-path: /
+
+spring:
+  #  profiles:
+  #    active: dev
+  application.name: dynamic-threadpool-spring-boot-demo
+
+dtp:
+  server-code: dynamic-threadpool-spring-boot-demo
+  server-monitor: http://127.0.0.1:8080
+
+knife4j:
+  enable: true
+  cors: false
+  production: false
+  basic:
+    enable: false
+    username: dev
+    password: dev
+  #  documents:
+  #    - group: API
+  #      name: 常见问题
+  #      locations: classpath:markdown/return_code.md
+  setting:
+    language: zh-CN
+    enableSwaggerModels: true
+    enableDocumentManage: true
+    swaggerModelName: 实体类列表
+    enableVersion: false
+    enableReloadCacheParameter: true
+    enableAfterScript: false
+    enableFilterMultipartApiMethodType: POST
+    enableFilterMultipartApis: false
+    enableRequestCache: true
+    enableHost: false
+    enableHostText: false
+    enableHomeCustom: false
+    #    homeCustomLocation: classpath:markdown/home.md
+    enableSearch: true
+    enableFooter: false
+    enableFooterCustom: true
+    footerCustomContent: Apache License 2.0 | Copyright  2022-[dynamic-threadpool]
+    enableDynamicParameter: true
+    enableDebug: true
+    enableOpenApi: true
+    enableGroup: true
