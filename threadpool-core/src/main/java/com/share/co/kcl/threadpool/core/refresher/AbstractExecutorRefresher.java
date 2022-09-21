@@ -3,6 +3,7 @@ package com.share.co.kcl.threadpool.core.refresher;
 import com.share.co.kcl.common.enums.RejectedStrategy;
 import com.share.co.kcl.common.model.bo.ExecutorConfigBo;
 import com.share.co.kcl.common.utils.AddressUtils;
+import com.share.co.kcl.threadpool.core.DynamicThreadPoolExecutor;
 import com.share.co.kcl.threadpool.core.monitor.ExecutorMonitor;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractExecutorRefresher implements Refresher {
 
-    private final AtomicBoolean shouldSyncFromRemote = new AtomicBoolean(false);
+    private final AtomicBoolean shouldSyncFromRemote = new AtomicBoolean(true);
 
     private final BlockingQueue<ExecutorConfigBo> refreshQueue = new LinkedBlockingQueue<>();
 
@@ -36,26 +37,11 @@ public abstract class AbstractExecutorRefresher implements Refresher {
             @Override
             public void run() {
                 try {
-                    if (shouldSyncFromRemote.get()) {
-                        shouldSyncFromRemote.set(false);
+                    if (!shouldSyncFromRemote.get()) {
                         return;
                     }
-
-                    boolean isShouldSyncExecutor = AbstractExecutorRefresher.this.checkExecutorSync(serverCode, serverIp);
-                    if (!isShouldSyncExecutor) {
-                        return;
-                    }
-
-                    List<ExecutorConfigBo> executorConfigList = AbstractExecutorRefresher.this.pullExecutorSync(serverCode, serverIp);
-                    if (CollectionUtils.isEmpty(executorConfigList)) {
-                        return;
-                    }
-                    for (ExecutorConfigBo executorConfigBo : executorConfigList) {
-                        // retry 3 times if offering refresh body is failure
-                        for (int i = 0; i < 3 && !refreshQueue.offer(executorConfigBo); i++) {
-                        }
-                    }
-                    shouldSyncFromRemote.set(true);
+                    AbstractExecutorRefresher.this.doRefresh();
+                    shouldSyncFromRemote.set(false);
                 } catch (Exception ignore) {
                 }
             }
@@ -67,20 +53,44 @@ public abstract class AbstractExecutorRefresher implements Refresher {
         for (; ; ) {
             try {
                 ExecutorConfigBo body = refreshQueue.take();
-
-                ThreadPoolExecutor threadPool = ExecutorMonitor.watch().get(body.getExecutorId());
-                threadPool.setCorePoolSize(body.getCorePoolSize());
-                threadPool.setMaximumPoolSize(body.getMaximumPoolSize());
-                threadPool.setKeepAliveTime(body.getKeepAliveTime(), TimeUnit.SECONDS);
-                RejectedExecutionHandler rejectedExecutionHandler = RejectedStrategy.parse(body.getRejectedStrategy());
-                if (Objects.nonNull(rejectedExecutionHandler)) {
-                    threadPool.setRejectedExecutionHandler(rejectedExecutionHandler);
-                }
+                AbstractExecutorRefresher.this.doUpdate(body);
             } catch (InterruptedException ignore) {
             } catch (Exception ignore) {
             } catch (Throwable ignore) {
             } finally {
-                shouldSyncFromRemote.set(false);
+                shouldSyncFromRemote.set(true);
+            }
+        }
+    }
+
+    protected void doRefresh() {
+        boolean isShouldSyncExecutor = AbstractExecutorRefresher.this.checkExecutorSync(serverCode, serverIp);
+        if (!isShouldSyncExecutor) {
+            return;
+        }
+
+        List<ExecutorConfigBo> executorConfigList = AbstractExecutorRefresher.this.pullExecutorSync(serverCode, serverIp);
+        if (CollectionUtils.isEmpty(executorConfigList)) {
+            return;
+        }
+        for (ExecutorConfigBo executorConfigBo : executorConfigList) {
+            // retry 3 times if offering refresh body is failure
+            for (int i = 0; i < 3 && !refreshQueue.offer(executorConfigBo); i++) {
+            }
+        }
+    }
+
+    protected void doUpdate(ExecutorConfigBo body) {
+        ThreadPoolExecutor threadPool = ExecutorMonitor.watch().get(body.getExecutorId());
+        if (Objects.nonNull(threadPool)) {
+            threadPool.setCorePoolSize(body.getCorePoolSize());
+            threadPool.setMaximumPoolSize(body.getMaximumPoolSize());
+            threadPool.setKeepAliveTime(body.getKeepAliveTime(), TimeUnit.SECONDS);
+            threadPool.setRejectedExecutionHandler(
+                    RejectedStrategy.parse(body.getRejectedStrategy()).orElse(RejectedStrategy.defaultRejectedHandler()));
+            if (threadPool instanceof DynamicThreadPoolExecutor) {
+                DynamicThreadPoolExecutor dynamicThreadPool = ((DynamicThreadPoolExecutor) threadPool);
+                dynamicThreadPool.setExecutorName(body.getExecutorName());
             }
         }
     }

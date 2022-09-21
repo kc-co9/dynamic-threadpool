@@ -1,6 +1,7 @@
 package com.share.co.kcl.common.enums;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -30,21 +31,21 @@ public enum RejectedStrategy {
      */
     DISCARD_OLDEST_POLICY;
 
-    public static RejectedExecutionHandler parse(RejectedStrategy strategy) {
+    public static Optional<RejectedExecutionHandler> parse(RejectedStrategy strategy) {
         if (Objects.isNull(strategy)) {
-            throw new IllegalArgumentException("strategy is null");
+            return Optional.empty();
         }
         switch (strategy) {
             case ABORT_POLICY:
-                return new ThreadPoolExecutor.AbortPolicy();
+                return Optional.of(new ThreadPoolExecutor.AbortPolicy());
             case CALLER_RUNS_POLICY:
-                return new ThreadPoolExecutor.CallerRunsPolicy();
+                return Optional.of(new ThreadPoolExecutor.CallerRunsPolicy());
             case DISCARD_POLICY:
-                return new ThreadPoolExecutor.DiscardPolicy();
+                return Optional.of(new ThreadPoolExecutor.DiscardPolicy());
             case DISCARD_OLDEST_POLICY:
-                return new ThreadPoolExecutor.DiscardOldestPolicy();
+                return Optional.of(new ThreadPoolExecutor.DiscardOldestPolicy());
             default:
-                return null;
+                return Optional.empty();
         }
     }
 
@@ -63,5 +64,13 @@ public enum RejectedStrategy {
         } else {
             return NONE;
         }
+    }
+
+    public static RejectedStrategy defaultStrategy() {
+        return ABORT_POLICY;
+    }
+
+    public static RejectedExecutionHandler defaultRejectedHandler() {
+        return new ThreadPoolExecutor.AbortPolicy();
     }
 }

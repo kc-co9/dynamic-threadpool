@@ -8,6 +8,8 @@ import com.share.co.kcl.threadpool.core.reporter.DefaultServerHealthReporter;
 import com.share.co.kcl.threadpool.core.reporter.Reporter;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,22 +20,25 @@ import java.util.concurrent.TimeUnit;
  * Unit test for simple App.
  */
 public class DynamicThreadPoolExecutorTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DynamicThreadPoolExecutorTest.class);
+
     /**
      * Rigorous Test :-)
      */
     @Test
     public void newDynamicThreadPoolExecutorTest() {
         new DynamicThreadPoolExecutor(1, 1, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
-        Assert.assertEquals("线程池注册失败", 1, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor register failure", 1, ExecutorMonitor.watch().size());
 
         new DynamicThreadPoolExecutor(1, 1, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), Executors.defaultThreadFactory());
-        Assert.assertEquals("线程池注册失败", 2, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor register failure", 2, ExecutorMonitor.watch().size());
 
         new DynamicThreadPoolExecutor(1, 1, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), new ThreadPoolExecutor.AbortPolicy());
-        Assert.assertEquals("线程池注册失败", 3, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor register failure", 3, ExecutorMonitor.watch().size());
 
         new DynamicThreadPoolExecutor(1, 1, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), Executors.defaultThreadFactory(), new ThreadPoolExecutor.AbortPolicy());
-        Assert.assertEquals("线程池注册失败", 4, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor register failure", 4, ExecutorMonitor.watch().size());
     }
 
     @Test
@@ -42,23 +47,22 @@ public class DynamicThreadPoolExecutorTest {
         DynamicThreadPoolExecutor executor2 = new DynamicThreadPoolExecutor(1, 1, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), Executors.defaultThreadFactory());
         DynamicThreadPoolExecutor executor3 = new DynamicThreadPoolExecutor(1, 1, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), new ThreadPoolExecutor.AbortPolicy());
         DynamicThreadPoolExecutor executor4 = new DynamicThreadPoolExecutor(1, 1, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), Executors.defaultThreadFactory(), new ThreadPoolExecutor.AbortPolicy());
-        Assert.assertEquals("线程池注册失败", 4, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor register failure", 4, ExecutorMonitor.watch().size());
 
         executor1.shutdownNow();
-        Assert.assertEquals("线程池1注销失败", 3, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor1 shutdown failure", 3, ExecutorMonitor.watch().size());
 
         executor2.shutdownNow();
-        Assert.assertEquals("线程池2注销失败", 2, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor2 shutdown failure", 2, ExecutorMonitor.watch().size());
 
         executor3.shutdownNow();
-        Assert.assertEquals("线程池3注销失败", 1, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor3 shutdown failure", 1, ExecutorMonitor.watch().size());
 
         executor4.shutdownNow();
-        Assert.assertEquals("线程池4注销失败", 0, ExecutorMonitor.watch().size());
+        Assert.assertEquals("executor4 shutdown failure", 0, ExecutorMonitor.watch().size());
     }
 
-    @Test
-    public void monitorDynamicThreadPoolExecutorTest() throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException {
         String serverCode = "test_server";
         String serverHealthReportLink = "http://localhost:8080/monitor/v1/reportServerHealth";
         String executorInfoReportLink = "http://localhost:8080/monitor/v1/reportExecutorInfo";
@@ -91,7 +95,7 @@ public class DynamicThreadPoolExecutorTest {
 
         while (true) {
             Thread.sleep(3000L);
-            System.out.println(System.currentTimeMillis());
+            LOG.debug("running:" + System.currentTimeMillis());
         }
     }
 }
