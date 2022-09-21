@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.share.co.kcl.threadpool.springboot.DynamicPoolAutoConfiguration
