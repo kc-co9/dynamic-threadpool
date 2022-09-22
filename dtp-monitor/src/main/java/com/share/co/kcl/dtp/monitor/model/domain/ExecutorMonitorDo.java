@@ -7,6 +7,7 @@ import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
 import com.share.co.kcl.dtp.common.model.dto.ExecutorReportDto;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorStatisticsBo;
 import com.share.co.kcl.dtp.common.utils.FunctionUtils;
+import com.share.co.kcl.dtp.monitor.factory.SpringDomainFactory;
 import com.share.co.kcl.dtp.monitor.model.Domain;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
@@ -59,7 +60,7 @@ public class ExecutorMonitorDo extends Domain {
      * RUNNING: the executor monitor can accept reported data.
      * CLOSE:   the executor monitor can't accept reported data, because of closing by invoker.
      */
-    private static final AtomicInteger monitorState = new AtomicInteger(INIT);
+    private final AtomicInteger monitorState = new AtomicInteger(INIT);
 
     @Getter
     private final Long serverId;
@@ -70,7 +71,7 @@ public class ExecutorMonitorDo extends Domain {
         super(applicationContext);
         this.serverId = serverId;
         this.serverIp = serverIp;
-        this.serverMonitor = new ServerMonitorDo(serverId, applicationContext);
+        this.serverMonitor = this.getSpringDomainFactory().newServerMonitor(serverId);
         this.monitorConfigInfoRedis = String.format(SERVER_EXECUTOR_CONFIG_INFO_MONITOR, this.serverId);
         this.monitorConfigSyncRedis = String.format(SERVER_EXECUTOR_CONFIG_SYNC_MONITOR, this.serverId);
         this.monitorStatisticsRedis = String.format(SERVER_EXECUTOR_STATISTICS_MONITOR, this.serverId);
@@ -83,7 +84,7 @@ public class ExecutorMonitorDo extends Domain {
         if (!this.serverMonitor.isRunning()) {
             return false;
         }
-        if (!monitorState.compareAndSet(INIT, RUNNING)) {
+        if (!this.monitorState.compareAndSet(INIT, RUNNING)) {
             return false;
         }
         return true;
@@ -93,7 +94,7 @@ public class ExecutorMonitorDo extends Domain {
      * save reported data sent by client
      */
     public boolean report(List<ExecutorReportDto> reportExecutorList) {
-        if (RUNNING != monitorState.get()) {
+        if (RUNNING != this.monitorState.get()) {
             throw new BusinessException("the executor is not running");
         }
 
@@ -114,7 +115,7 @@ public class ExecutorMonitorDo extends Domain {
      * configure the executor setting
      */
     public boolean configure(String executorId, ExecutorConfigBo configUpdateInfo) {
-        if (RUNNING != monitorState.get()) {
+        if (RUNNING != this.monitorState.get()) {
             throw new BusinessException("the executor is not running");
         }
 
@@ -141,7 +142,7 @@ public class ExecutorMonitorDo extends Domain {
      * lookup the executor config
      */
     public List<ExecutorConfigBo> lookupConfig() {
-        if (RUNNING != monitorState.get())
+        if (RUNNING != this.monitorState.get())
             throw new BusinessException("the executor is not running");
         return this.getRedisConfigInfo();
     }
@@ -150,7 +151,7 @@ public class ExecutorMonitorDo extends Domain {
      * lookup the executor sync
      */
     public Map<String, Boolean> lookupSync() {
-        if (RUNNING != monitorState.get())
+        if (RUNNING != this.monitorState.get())
             throw new BusinessException("the executor is not running");
         return this.getRedisConfigSync();
     }
@@ -159,7 +160,7 @@ public class ExecutorMonitorDo extends Domain {
      * lookup the executor statistics
      */
     public List<ExecutorStatisticsBo> lookupStatistics() {
-        if (RUNNING != monitorState.get())
+        if (RUNNING != this.monitorState.get())
             throw new BusinessException("the executor is not running");
         return this.getRedisStatistics();
     }
@@ -168,7 +169,7 @@ public class ExecutorMonitorDo extends Domain {
      * check the executor if sync
      */
     public boolean isSync(String executorId) {
-        if (RUNNING != monitorState.get()) {
+        if (RUNNING != this.monitorState.get()) {
             throw new BusinessException("the executor is not running");
         }
         Map<String, Boolean> redisConfigSyncMap = this.getRedisConfigSync();
@@ -179,7 +180,7 @@ public class ExecutorMonitorDo extends Domain {
      * check the executor if running
      */
     public boolean isRunning() {
-        if (RUNNING != monitorState.get()) {
+        if (RUNNING != this.monitorState.get()) {
             return false;
         }
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
@@ -196,10 +197,10 @@ public class ExecutorMonitorDo extends Domain {
      * close the executor monitor
      */
     public boolean close() {
-        if (CLOSE <= monitorState.get())
+        if (CLOSE <= this.monitorState.get())
             throw new BusinessException("the executor has been closed");
         if (this.clear()) {
-            monitorState.set(CLOSE);
+            this.monitorState.set(CLOSE);
             return true;
         }
         return false;
@@ -293,6 +294,10 @@ public class ExecutorMonitorDo extends Domain {
     @SuppressWarnings("unchecked")
     private RedisTemplate<String, String> getRedisTemplate() {
         return (RedisTemplate<String, String>) this.applicationContext.getBean("dtpStringRedisTemplate");
+    }
+
+    private SpringDomainFactory getSpringDomainFactory() {
+        return this.applicationContext.getBean(SpringDomainFactory.class);
     }
 
 

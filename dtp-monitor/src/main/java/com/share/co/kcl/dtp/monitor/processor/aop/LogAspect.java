@@ -43,7 +43,7 @@ public class LogAspect {
     /**
      * 需要修改包路径
      */
-    @Pointcut(value = "execution(* com.share.co.kcl.threadpool..*.controller..*.*(..))")
+    @Pointcut(value = "execution(* com.share.co.kcl.dtp..*.controller..*.*(..))")
     protected void pointcut() {
     }
 

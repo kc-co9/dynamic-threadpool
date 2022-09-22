@@ -44,7 +44,7 @@ public class SwaggerConfig {
 
     private ApiInfo defaultApiInfo() {
         return new ApiInfoBuilder()
-                .title("监听器API接口文档")
+                .title("SpringBootDemo接口文档")
                 .description("接口文档")
                 .contact(new Contact("kcl-co", "", "kcl.co.share@gmail.com"))
                 .version("1.0")
