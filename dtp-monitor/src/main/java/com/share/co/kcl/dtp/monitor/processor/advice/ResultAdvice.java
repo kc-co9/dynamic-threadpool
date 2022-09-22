@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 @ConditionalOnWebApplication
-@RestControllerAdvice(basePackages = {"com.share.co.kcl.threadpool.monitor"})
+@RestControllerAdvice(basePackages = {"com.share.co.kcl.dtp.monitor"})
 public class ResultAdvice implements ResponseBodyAdvice<Object> {
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {

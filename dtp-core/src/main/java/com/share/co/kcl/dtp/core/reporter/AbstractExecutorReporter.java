@@ -73,15 +73,17 @@ public abstract class AbstractExecutorReporter implements Reporter {
                             }).collect(Collectors.toList());
                     AbstractExecutorReporter.this.sendReport(serverCode, serverIp, reportBodies);
                 } catch (Exception ignore) {
+                    // ignore any exception
                 }
             }
-        }, 5000, 5000);
+        }, 1000, 5000);
     }
 
     /**
      * send the report body to remote
      *
      * @param serverCode   server code
+     * @param serverIp     server ip
      * @param reportBodies report bodies
      * @return success / false
      */

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -197,21 +198,22 @@ public class AbstractExecutorRefresherTest {
         }
 
         @Override
-        protected void doRefresh() {
+        protected List<ExecutorConfigBo> doPull() {
             if (this.canRefresh) {
                 try {
-                    super.doRefresh();
+                    return super.doPull();
                 } finally {
                     this.isRefresh = true;
                 }
             }
+            return Collections.emptyList();
         }
 
         @Override
-        protected void doUpdate(ExecutorConfigBo body) {
+        protected void doUpdate(ExecutorConfigBo refreshContent) {
             if (this.canUpdate) {
                 try {
-                    super.doUpdate(body);
+                    super.doUpdate(refreshContent);
                 } finally {
                     this.isUpdate = true;
                 }

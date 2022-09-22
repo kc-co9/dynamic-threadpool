@@ -8,12 +8,16 @@ import com.share.co.kcl.dtp.core.monitor.ExecutorMonitor;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractExecutorRefresher implements Refresher {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractExecutorRefresher.class);
 
     private final AtomicBoolean shouldSyncFromRemote = new AtomicBoolean(true);
 
@@ -40,9 +44,15 @@ public abstract class AbstractExecutorRefresher implements Refresher {
                     if (!shouldSyncFromRemote.get()) {
                         return;
                     }
-                    AbstractExecutorRefresher.this.doRefresh();
+                    List<ExecutorConfigBo> refreshList = AbstractExecutorRefresher.this.doPull();
+                    for (ExecutorConfigBo refreshContent : refreshList) {
+                        // retry 3 times if offering refresh body is failure
+                        for (int i = 0; i < 3 && !refreshQueue.offer(refreshContent); i++) {
+                        }
+                    }
                     shouldSyncFromRemote.set(false);
                 } catch (Exception ignore) {
+                    // ignore any exception
                 }
             }
         }, 3000, 3000);
@@ -50,11 +60,10 @@ public abstract class AbstractExecutorRefresher implements Refresher {
         new Thread(() -> {
             for (; ; ) {
                 try {
-                    ExecutorConfigBo body = refreshQueue.take();
-                    AbstractExecutorRefresher.this.doUpdate(body);
-                } catch (InterruptedException ignore) {
+                    ExecutorConfigBo refreshContent = refreshQueue.take();
+                    AbstractExecutorRefresher.this.doUpdate(refreshContent);
                 } catch (Exception ignore) {
-                } catch (Throwable ignore) {
+                    // ignore any exception
                 } finally {
                     shouldSyncFromRemote.set(true);
                 }
@@ -62,35 +71,35 @@ public abstract class AbstractExecutorRefresher implements Refresher {
         }).start();
     }
 
-    protected void doRefresh() {
+    protected List<ExecutorConfigBo> doPull() {
         boolean isShouldSyncExecutor = AbstractExecutorRefresher.this.checkExecutorSync(serverCode, serverIp);
         if (!isShouldSyncExecutor) {
-            return;
+            return Collections.emptyList();
         }
 
         List<ExecutorConfigBo> executorConfigList = AbstractExecutorRefresher.this.pullExecutorSync(serverCode, serverIp);
         if (CollectionUtils.isEmpty(executorConfigList)) {
-            return;
+            return Collections.emptyList();
         }
-        for (ExecutorConfigBo executorConfigBo : executorConfigList) {
-            // retry 3 times if offering refresh body is failure
-            for (int i = 0; i < 3 && !refreshQueue.offer(executorConfigBo); i++) {
-            }
-        }
+
+        LOG.info("succeed pulling refresh data, executor content: {}", executorConfigList);
+        return executorConfigList;
     }
 
-    protected void doUpdate(ExecutorConfigBo body) {
-        ThreadPoolExecutor threadPool = ExecutorMonitor.watch().get(body.getExecutorId());
-        if (Objects.nonNull(threadPool)) {
-            threadPool.setCorePoolSize(body.getCorePoolSize());
-            threadPool.setMaximumPoolSize(body.getMaximumPoolSize());
-            threadPool.setKeepAliveTime(body.getKeepAliveTime(), TimeUnit.SECONDS);
-            threadPool.setRejectedExecutionHandler(
-                    RejectedStrategy.parse(body.getRejectedStrategy()).orElse(RejectedStrategy.defaultRejectedHandler()));
-            if (threadPool instanceof DynamicThreadPoolExecutor) {
-                DynamicThreadPoolExecutor dynamicThreadPool = ((DynamicThreadPoolExecutor) threadPool);
-                dynamicThreadPool.setExecutorName(body.getExecutorName());
+    protected void doUpdate(ExecutorConfigBo refreshContent) {
+        ThreadPoolExecutor executor = ExecutorMonitor.watch().get(refreshContent.getExecutorId());
+        if (Objects.nonNull(executor)) {
+            executor.setCorePoolSize(refreshContent.getCorePoolSize());
+            executor.setMaximumPoolSize(refreshContent.getMaximumPoolSize());
+            executor.setKeepAliveTime(refreshContent.getKeepAliveTime(), TimeUnit.SECONDS);
+            executor.setRejectedExecutionHandler(
+                    RejectedStrategy.parse(refreshContent.getRejectedStrategy()).orElse(RejectedStrategy.defaultRejectedHandler()));
+            if (executor instanceof DynamicThreadPoolExecutor) {
+                DynamicThreadPoolExecutor dynamicExecutor = ((DynamicThreadPoolExecutor) executor);
+                dynamicExecutor.setExecutorName(refreshContent.getExecutorName());
             }
+
+            LOG.info("succeed updating refresh data to thread pool , update content: {}", refreshContent);
         }
     }
 

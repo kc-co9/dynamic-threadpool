@@ -29,15 +29,17 @@ public abstract class AbstractServerHealthReporter implements Reporter {
                 try {
                     AbstractServerHealthReporter.this.sendReport(serverCode, serverIp);
                 } catch (Exception ignore) {
+                    // ignore any exception
                 }
             }
-        }, 3000, 3000);
+        }, 0, 3000);
     }
 
     /**
      * send the report body to remote
      *
-     * @param reportBody report bodies
+     * @param serverCode server code
+     * @param serverIp   server ip
      * @return success / false
      */
     protected abstract boolean sendReport(String serverCode, String serverIp);
