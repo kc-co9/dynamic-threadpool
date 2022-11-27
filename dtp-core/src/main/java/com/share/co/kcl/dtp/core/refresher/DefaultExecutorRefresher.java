@@ -19,18 +19,22 @@ public class DefaultExecutorRefresher extends AbstractExecutorRefresher {
     private final String checkRefreshLink;
     private final String pullRefreshLink;
 
-    public DefaultExecutorRefresher(String serverCode, String checkExecutorSyncLink, String pullExecutorSyncLink) {
-        super(serverCode);
+    public DefaultExecutorRefresher(String serverCode, String serverSecret, String checkExecutorSyncLink, String pullExecutorSyncLink) {
+        super(serverCode, serverSecret);
         this.checkRefreshLink = checkExecutorSyncLink;
         this.pullRefreshLink = pullExecutorSyncLink;
     }
 
     @Override
     protected boolean checkExecutorSync(String serverCode, String serverIp) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("secret", serverSecret);
+
         Map<String, String> params = new HashMap<>();
         params.put("serverCode", serverCode);
         params.put("serverIp", serverIp);
-        ResponseBody responseBody = HttpUtils.doGet(checkRefreshLink, params);
+
+        ResponseBody responseBody = HttpUtils.doGet(checkRefreshLink, headers, params);
         try {
             JSONObject response = JSON.parseObject(responseBody.string());
 
@@ -54,10 +58,13 @@ public class DefaultExecutorRefresher extends AbstractExecutorRefresher {
 
     @Override
     protected List<ExecutorConfigBo> pullExecutorSync(String serverCode, String serverIp) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("secret", serverSecret);
+
         Map<String, String> params = new HashMap<>();
         params.put("serverCode", serverCode);
         params.put("serverIp", serverIp);
-        ResponseBody responseBody = HttpUtils.doGet(pullRefreshLink, params);
+        ResponseBody responseBody = HttpUtils.doGet(pullRefreshLink, headers, params);
         try {
             JSONObject response = JSON.parseObject(responseBody.string());
 

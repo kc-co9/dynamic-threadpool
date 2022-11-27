@@ -21,4 +21,8 @@ public class ServerUpdateRequest {
     @ApiModelProperty(name = "服务名称")
     private String serverName;
 
+    @NotBlank(message = "服务密钥不能为空")
+    @ApiModelProperty(name = "服务密钥")
+    private String serverSecret;
+
 }

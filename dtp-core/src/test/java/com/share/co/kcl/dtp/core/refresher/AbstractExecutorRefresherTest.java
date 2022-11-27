@@ -27,7 +27,7 @@ public class AbstractExecutorRefresherTest {
 
     @BeforeClass
     public static void startRefreshThread() {
-        executorRefresher = new TestExecutorRefresher("ignore");
+        executorRefresher = new TestExecutorRefresher("ignore", "ignore");
         executorRefresher.refresh();
     }
 
@@ -168,8 +168,8 @@ public class AbstractExecutorRefresherTest {
         private Boolean canUpdate = false;
         private Boolean isUpdate = false;
 
-        protected TestExecutorRefresher(String serverCode) {
-            super(serverCode);
+        protected TestExecutorRefresher(String serverCode, String serverSecret) {
+            super(serverCode, serverSecret);
         }
 
         @Override

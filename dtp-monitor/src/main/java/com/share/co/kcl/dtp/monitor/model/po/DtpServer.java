@@ -16,4 +16,9 @@ public class DtpServer extends DtpBase {
      * 服务名称
      */
     private String serverName;
+
+    /**
+     * 服务密钥
+     */
+    private String serverSecret;
 }

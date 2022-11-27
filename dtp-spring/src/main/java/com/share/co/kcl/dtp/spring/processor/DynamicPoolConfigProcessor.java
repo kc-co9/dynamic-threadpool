@@ -17,26 +17,27 @@ public class DynamicPoolConfigProcessor implements InitializingBean {
         DynamicPoolConfig poolConfig = DynamicPoolConfigRepository.get();
 
         String serverCode = poolConfig.getServerCode();
-        String serverMonitor = poolConfig.getServerMonitor();
+        String serverSecret = poolConfig.getServerSecret();
+        String serverDomain = poolConfig.getServerDomain();
 
-        this.startServerReporter(serverCode, serverMonitor);
-        this.startExecutorReporter(serverCode, serverMonitor);
-        this.startExecutorRefresher(serverCode, serverMonitor);
+        this.startServerReporter(serverCode, serverSecret, serverDomain);
+        this.startExecutorReporter(serverCode, serverSecret, serverDomain);
+        this.startExecutorRefresher(serverCode, serverSecret, serverDomain);
     }
 
-    private void startServerReporter(String serverCode, String serverMonitor) {
-        String reportLink = serverMonitor + DynamicPoolConfigMeta.SERVER_REPORT_HEALTH_URL;
-        new DefaultServerHealthReporter(serverCode, reportLink).report();
+    private void startServerReporter(String serverCode, String serverSecret, String serverDomain) {
+        String reportLink = serverDomain + DynamicPoolConfigMeta.SERVER_REPORT_HEALTH_URL;
+        new DefaultServerHealthReporter(serverCode, serverSecret, reportLink).report();
     }
 
-    private void startExecutorReporter(String serverCode, String serverMonitor) {
-        String reportLink = serverMonitor + DynamicPoolConfigMeta.EXECUTOR_REPORT_INFO_URL;
-        new DefaultExecutorReporter(serverCode, reportLink).report();
+    private void startExecutorReporter(String serverCode, String serverSecret, String serverDomain) {
+        String reportLink = serverDomain + DynamicPoolConfigMeta.EXECUTOR_REPORT_INFO_URL;
+        new DefaultExecutorReporter(serverCode, serverSecret, reportLink).report();
     }
 
-    private void startExecutorRefresher(String serverCode, String serverMonitor) {
-        String checkSyncLink = serverMonitor + EXECUTOR_REFRESH_CHECK_SYNC_URL;
-        String pullSyncLink = serverMonitor + EXECUTOR_REFRESH_PULL_SYNC_URL;
-        new DefaultExecutorRefresher(serverCode, checkSyncLink, pullSyncLink).refresh();
+    private void startExecutorRefresher(String serverCode, String serverSecret, String serverDomain) {
+        String checkSyncLink = serverDomain + EXECUTOR_REFRESH_CHECK_SYNC_URL;
+        String pullSyncLink = serverDomain + EXECUTOR_REFRESH_PULL_SYNC_URL;
+        new DefaultExecutorRefresher(serverCode, serverSecret, checkSyncLink, pullSyncLink).refresh();
     }
 }

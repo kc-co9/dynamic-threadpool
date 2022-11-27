@@ -1,6 +1,6 @@
 package com.share.co.kcl.dtp.monitor.processor.aop;
 
-import com.share.co.kcl.dtp.monitor.annotation.Cache;
+import com.share.co.kcl.dtp.monitor.processor.annotation.Cache;
 import com.share.co.kcl.dtp.monitor.sdk.helper.CacheHelper;
 import com.share.co.kcl.dtp.monitor.utils.AopUtils;
 import com.share.co.kcl.dtp.monitor.utils.SpELUtils;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class CacheAspect {
     private static final String CACHE_ASPECT_PREFIX = "cache_aspect";
 
-    @Pointcut("@annotation(com.share.co.kcl.dtp.monitor.annotation.Cache)")
+    @Pointcut("@annotation(com.share.co.kcl.dtp.monitor.processor.annotation.Cache)")
     public void pointCut() {
     }
 

@@ -63,20 +63,21 @@ public class DynamicThreadPoolExecutorTest {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        String serverCode = "test_server";
+        String serverCode = "test-server";
+        String serverSecret = "test-secret";
         String serverHealthReportLink = "http://localhost:8080/monitor/v1/reportServerHealth";
         String executorInfoReportLink = "http://localhost:8080/monitor/v1/reportExecutorInfo";
 
         String checkExecutorSyncLink = "http://localhost:8080/monitor/v1/checkExecutorSync";
         String pullExecutorSyncLink = "http://localhost:8080/monitor/v1/lookupExecutorSync";
 
-        Reporter serverReporter = new DefaultServerHealthReporter(serverCode, serverHealthReportLink);
+        Reporter serverReporter = new DefaultServerHealthReporter(serverCode, serverSecret, serverHealthReportLink);
         serverReporter.report();
 
-        Reporter executorReporter = new DefaultExecutorReporter(serverCode, executorInfoReportLink);
+        Reporter executorReporter = new DefaultExecutorReporter(serverCode, serverSecret, executorInfoReportLink);
         executorReporter.report();
 
-        Refresher executorRefresher = new DefaultExecutorRefresher(serverCode, checkExecutorSyncLink, pullExecutorSyncLink);
+        Refresher executorRefresher = new DefaultExecutorRefresher(serverCode, serverSecret, checkExecutorSyncLink, pullExecutorSyncLink);
         executorRefresher.refresh();
 
         new DynamicThreadPoolExecutor(1, 10, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<>());

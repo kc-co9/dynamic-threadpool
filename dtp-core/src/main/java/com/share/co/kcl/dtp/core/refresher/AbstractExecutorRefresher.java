@@ -2,7 +2,7 @@ package com.share.co.kcl.dtp.core.refresher;
 
 import com.share.co.kcl.dtp.common.enums.RejectedStrategy;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
-import com.share.co.kcl.dtp.common.utils.AddressUtils;
+import com.share.co.kcl.dtp.common.utils.NetworkUtils;
 import com.share.co.kcl.dtp.core.DynamicThreadPoolExecutor;
 import com.share.co.kcl.dtp.core.monitor.ExecutorMonitor;
 import lombok.Getter;
@@ -28,11 +28,15 @@ public abstract class AbstractExecutorRefresher implements Refresher {
     protected String serverCode;
     @Getter
     @Setter
+    protected String serverSecret;
+    @Getter
+    @Setter
     protected String serverIp;
 
-    protected AbstractExecutorRefresher(String serverCode) {
+    protected AbstractExecutorRefresher(String serverCode, String serverSecret) {
         this.serverCode = serverCode;
-        this.serverIp = AddressUtils.getLocalIpList().get(0);
+        this.serverSecret = serverSecret;
+        this.serverIp = NetworkUtils.getLocalIpList().get(0);
     }
 
     @Override

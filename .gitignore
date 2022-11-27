@@ -5,6 +5,7 @@
 **/.gradle/**
 /logs
 **/logs/
+**/node_modules
 
 ### IntelliJ IDEA ###
 .idea

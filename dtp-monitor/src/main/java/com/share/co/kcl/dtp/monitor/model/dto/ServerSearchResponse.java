@@ -30,6 +30,7 @@ public class ServerSearchResponse {
             server.setServerId(dtpServer.getId());
             server.setServerCode(dtpServer.getServerCode());
             server.setServerName(dtpServer.getServerName());
+            server.setServerSecret(dtpServer.getServerSecret());
             server.setServerIpList(
                     Optional.ofNullable(serverMonitorMap.get(dtpServer.getId()))
                             .map(ServerMonitorDo::lookup)
@@ -54,6 +55,9 @@ public class ServerSearchResponse {
 
         @ApiModelProperty(name = "服务名称")
         private String serverName;
+
+        @ApiModelProperty(name = "服务密钥")
+        private String serverSecret;
 
         @ApiModelProperty(name = "服务正在运行IP")
         private List<String> serverIpList;

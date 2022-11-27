@@ -1,7 +1,7 @@
 package com.share.co.kcl.dtp.monitor.processor.aop;
 
 import com.share.co.kcl.dtp.common.exception.ToastException;
-import com.share.co.kcl.dtp.monitor.annotation.Lock;
+import com.share.co.kcl.dtp.monitor.processor.annotation.Lock;
 import com.share.co.kcl.dtp.monitor.sdk.helper.LockHelper;
 import com.share.co.kcl.dtp.monitor.utils.AopUtils;
 import com.share.co.kcl.dtp.monitor.utils.SpELUtils;
@@ -25,7 +25,7 @@ public class LockAspect {
 
     private static final String LOCK_ASPECT_PREFIX = "lock_aspect";
 
-    @Pointcut("@annotation(com.share.co.kcl.dtp.monitor.annotation.Lock)")
+    @Pointcut("@annotation(com.share.co.kcl.dtp.monitor.processor.annotation.Lock)")
     public void pointCut() {
     }
 

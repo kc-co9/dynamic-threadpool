@@ -2,7 +2,7 @@ package com.share.co.kcl.dtp.monitor.processor.aop;
 
 import com.alibaba.fastjson2.JSON;
 import com.google.common.base.Throwables;
-import com.share.co.kcl.dtp.monitor.annotation.LogPrint;
+import com.share.co.kcl.dtp.monitor.processor.annotation.LogPrint;
 import com.share.co.kcl.dtp.monitor.utils.AopUtils;
 import com.share.co.kcl.dtp.monitor.utils.NetworkUtils;
 import org.aspectj.lang.JoinPoint;
@@ -17,15 +17,13 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.share.co.kcl.dtp.monitor.annotation.LogPrint.LogField.*;
+import static com.share.co.kcl.dtp.monitor.processor.annotation.LogPrint.LogField.*;
 
 
 /**
  * 日志AOP，需要实现子类，并实现相应得方法{@link LogAspect#pointcut()}
  * <p>
  * 如需指定特定输出字段，可使用注解{@link LogPrint}
- *
- * @author K.C
  */
 @Aspect
 @Component

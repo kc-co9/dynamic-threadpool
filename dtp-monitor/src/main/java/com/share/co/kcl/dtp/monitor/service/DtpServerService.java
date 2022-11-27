@@ -1,7 +1,7 @@
 package com.share.co.kcl.dtp.monitor.service;
 
 import com.share.co.kcl.dtp.common.exception.BusinessException;
-import com.share.co.kcl.dtp.monitor.annotation.Lock;
+import com.share.co.kcl.dtp.monitor.processor.annotation.Lock;
 import com.share.co.kcl.dtp.monitor.dao.DtpServerDao;
 import com.share.co.kcl.dtp.monitor.model.domain.ServerMonitorDo;
 import com.share.co.kcl.dtp.monitor.factory.SpringDomainFactory;
@@ -36,11 +36,15 @@ public class DtpServerService extends DtpBaseService<DtpServerDao, DtpServer> {
         }
     }
 
+    @Lock(key = "#serverCode + ':' + #serverIp", timeout = 3L, waittime = 1L)
+    public void reportConfig(String serverCode, String serverIp, Integer cpuNum, Integer memorySize) {
+
+    }
+
     public Optional<DtpServer> getByCode(String serverCode) {
         if (StringUtils.isBlank(serverCode)) {
             return Optional.empty();
         }
         return this.getFirst(this.getQueryWrapper().eq(DtpServer::getServerCode, serverCode));
     }
-
 }

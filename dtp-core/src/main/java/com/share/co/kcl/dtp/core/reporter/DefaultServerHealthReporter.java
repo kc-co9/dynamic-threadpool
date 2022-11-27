@@ -18,17 +18,21 @@ public class DefaultServerHealthReporter extends AbstractServerHealthReporter {
 
     private final String reportLink;
 
-    public DefaultServerHealthReporter(String serverCode, String reportLink) {
-        super(serverCode);
+    public DefaultServerHealthReporter(String serverCode, String serverSecret, String reportLink) {
+        super(serverCode, serverSecret);
         this.reportLink = reportLink;
     }
 
     @Override
-    protected boolean sendReport(String serverCode, String serverIp) {
+    protected boolean sendReport(String serverCode, String serverSecret, String serverIp) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("secret", serverSecret);
+
         Map<String, String> params = new HashMap<>();
         params.put("serverCode", serverCode);
         params.put("serverIp", serverIp);
-        ResponseBody responseBody = HttpUtils.doGet(reportLink, params);
+
+        ResponseBody responseBody = HttpUtils.doGet(reportLink, headers, params);
         try {
             JSONObject response = JSON.parseObject(responseBody.string());
             Integer responseCode = response.getInteger("code");

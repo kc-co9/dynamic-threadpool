@@ -4,7 +4,7 @@ import com.share.co.kcl.dtp.common.exception.BusinessException;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorStatisticsBo;
 import com.share.co.kcl.dtp.common.model.dto.ExecutorReportDto;
-import com.share.co.kcl.dtp.monitor.annotation.Lock;
+import com.share.co.kcl.dtp.monitor.processor.annotation.Lock;
 import com.share.co.kcl.dtp.monitor.factory.SpringDomainFactory;
 import com.share.co.kcl.dtp.monitor.model.domain.ExecutorMonitorDo;
 import org.springframework.beans.factory.annotation.Autowired;

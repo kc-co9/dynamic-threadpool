@@ -1,7 +1,7 @@
 package com.share.co.kcl.dtp.monitor.processor.aop;
 
 import com.share.co.kcl.dtp.common.utils.ReflectUtils;
-import com.share.co.kcl.dtp.monitor.annotation.IgnoreErr;
+import com.share.co.kcl.dtp.monitor.processor.annotation.IgnoreErr;
 import com.share.co.kcl.dtp.monitor.utils.AopUtils;
 import com.share.co.kcl.dtp.monitor.utils.SpELUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +23,7 @@ public class IgnoreErrAspect {
 
     private static final Logger LOG = LoggerFactory.getLogger(IgnoreErrAspect.class);
 
-    @Pointcut("@annotation(com.share.co.kcl.dtp.monitor.annotation.IgnoreErr)")
+    @Pointcut("@annotation(com.share.co.kcl.dtp.monitor.processor.annotation.IgnoreErr)")
     public void pointCut() {
     }
 

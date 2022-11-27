@@ -31,10 +31,14 @@ public class HttpUtils {
     private HttpUtils() {
     }
 
-    public static ResponseBody doGet(String path, Map<String, String> params) {
+    public static ResponseBody doGet(String path, Map<String, String> headers, Map<String, String> params) {
         if (StringUtils.isBlank(path)) {
             throw new IllegalArgumentException("url is null");
         }
+
+        Headers.Builder headerBuilder = new Headers.Builder();
+        headers.forEach(headerBuilder::add);
+        Headers requestHeaders = headerBuilder.build();
 
         HttpUrl.Builder httpBuilder = Objects.requireNonNull(HttpUrl.parse(path)).newBuilder();
         if (MapUtils.isNotEmpty(params)) {
@@ -42,10 +46,11 @@ public class HttpUtils {
         }
         Request request = new Request.Builder()
                 .url(httpBuilder.build())
+                .headers(requestHeaders)
                 .build();
         try (Response response = okHttpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                LOG.warn("http GET request return exception code:{},body:{}", response.code(),response.body());
+                LOG.warn("http GET request return exception code:{},body:{}", response.code(), response.body());
                 throw new HttpException("http GET request failure");
             }
             return response.body();
@@ -55,15 +60,19 @@ public class HttpUtils {
         }
     }
 
-    public static ResponseBody doPost(String path, Object body) {
+    public static ResponseBody doPost(String path, Map<String, String> headers, Object body) {
+        Headers.Builder headerBuilder = new Headers.Builder();
+        headers.forEach(headerBuilder::add);
+        Headers requestHeaders = headerBuilder.build();
         RequestBody requestBody = RequestBody.create(JSON.toJSONString(body), MEDIA_JSON);
         Request request = new Request.Builder()
                 .url(path)
+                .headers(requestHeaders)
                 .post(requestBody)
                 .build();
         try (Response response = okHttpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                LOG.warn("http POST request return exception code:{},body:{}", response.code(),response.body());
+                LOG.warn("http POST request return exception code:{},body:{}", response.code(), response.body());
                 throw new HttpException("http POST request failure");
             }
             return response.body();

@@ -10,7 +10,8 @@ spring:
 
 dtp:
   server-code: dynamic-threadpool-spring-demo
-  server-monitor: http://127.0.0.1:8080
+  server-secret: test-secret
+  server-domain: http://127.0.0.1:8080
 
 
 knife4j:

@@ -11,7 +11,12 @@ public class DynamicPoolConfig {
     private String serverCode;
 
     /**
+     * the server secret
+     */
+    private String serverSecret;
+
+    /**
      * the server monitor domain
      */
-    private String serverMonitor;
+    private String serverDomain;
 }

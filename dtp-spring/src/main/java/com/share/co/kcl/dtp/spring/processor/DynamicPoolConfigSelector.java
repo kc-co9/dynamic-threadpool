@@ -21,16 +21,18 @@ public class DynamicPoolConfigSelector implements DeferredImportSelector, Enviro
     @Override
     public String[] selectImports(AnnotationMetadata importingClassMetadata) {
         String serverCode = environment.getProperty(DynamicPoolConfigMeta.SERVER_CODE, String.class);
-        String serverMonitor = environment.getProperty(DynamicPoolConfigMeta.SERVER_MONITOR, String.class);
+        String serverSecret = environment.getProperty(DynamicPoolConfigMeta.SERVER_SECRET, String.class);
+        String serverDomain = environment.getProperty(DynamicPoolConfigMeta.SERVER_DOMAIN, String.class);
 
-        if (StringUtils.isBlank(serverCode) || StringUtils.isBlank(serverMonitor)) {
+        if (StringUtils.isBlank(serverCode) || StringUtils.isBlank(serverDomain)) {
             LOG.error("dynamic thread pool config is error");
             return new String[0];
         }
 
         DynamicPoolConfig dynamicPoolConfig = new DynamicPoolConfig();
         dynamicPoolConfig.setServerCode(serverCode);
-        dynamicPoolConfig.setServerMonitor(serverMonitor);
+        dynamicPoolConfig.setServerSecret(serverSecret);
+        dynamicPoolConfig.setServerDomain(serverDomain);
         DynamicPoolConfigRepository.save(dynamicPoolConfig);
 
         return new String[]{DynamicPoolConfigProcessor.class.getName()};

@@ -20,18 +20,22 @@ public class DefaultExecutorReporter extends AbstractExecutorReporter {
 
     private final String reportLink;
 
-    public DefaultExecutorReporter(String serverCode, String reportLink) {
-        super(serverCode);
+    public DefaultExecutorReporter(String serverCode, String serverSecret, String reportLink) {
+        super(serverCode, serverSecret);
         this.reportLink = reportLink;
     }
 
     @Override
-    protected boolean sendReport(String serverCode, String serverIp, List<ExecutorReportDto> executorList) {
+    protected boolean sendReport(String serverCode, String serverSecret, String serverIp, List<ExecutorReportDto> executorList) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("secret", serverSecret);
+
         Map<String, Object> body = new HashMap<>();
         body.put("serverCode", serverCode);
         body.put("serverIp", serverIp);
         body.put("executorList", executorList);
-        ResponseBody responseBody = HttpUtils.doPost(reportLink, body);
+
+        ResponseBody responseBody = HttpUtils.doPost(reportLink, headers, body);
         try {
             JSONObject response = JSON.parseObject(responseBody.string());
             Integer responseCode = response.getInteger("code");
