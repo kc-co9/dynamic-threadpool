@@ -26,6 +26,9 @@
           <el-button type="primary" @click="search">
             搜索
           </el-button>
+          <el-button type="primary" @click="showInsert">
+            新增
+          </el-button>
         </el-form-item>
       </el-form>
 
@@ -83,6 +86,20 @@
             {{ scope.row.isRunning ? '运行中' : '下线' }}
           </template>
         </el-table-column>
+        <el-table-column
+            align="center"
+            label="操作"
+            fixed="right"
+            width="120">
+          <template slot-scope="scope">
+            <el-button type="text" @click="showEdit(scope.row)">
+              编辑
+            </el-button>
+            <el-button type="text" @click="remove(scope.row)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-row>
     <el-row type="flex" justify="center" style="margin-top:20px">
@@ -93,13 +110,57 @@
           @current-change="pageChange"
       />
     </el-row>
+
+    <el-dialog title="新增服务" :visible.sync="insertVisible">
+      <el-form :model="insertForm" label-position="right" label-width="120px">
+        <el-form-item label="服务代码">
+          <el-input v-model="insertForm.serverCode" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="服务名称">
+          <el-input v-model="insertForm.serverName" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="服务密钥">
+          <el-input v-model="insertForm.serverSecret" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="insertVisible = false">
+          取 消
+        </el-button>
+        <el-button type="primary" @click="insert">
+          确 定
+        </el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog title="编辑服务" :visible.sync="editVisible">
+      <el-form :model="editForm" label-position="right" label-width="120px">
+        <el-form-item label="服务代码">
+          <el-input v-model="editForm.serverCode" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="服务名称">
+          <el-input v-model="editForm.serverName" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="服务密钥">
+          <el-input v-model="editForm.serverSecret" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="editVisible = false">
+          取 消
+        </el-button>
+        <el-button type="primary" @click="edit">
+          确 定
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 
 <script>
 import {CONSTANTS} from '@/api/common'
-import {getServerList} from '@/api/server'
+import {getServerList, insertServer, updateServer, deleteServer} from '@/api/server'
 
 export default {
   name: 'Server',
@@ -120,6 +181,19 @@ export default {
         records: []
       },
       tableLoading: false,
+      insertVisible: false,
+      insertForm: {
+        serverCode: null,
+        serverName: null,
+        serverSecret: null
+      },
+      editVisible: false,
+      editForm: {
+        serverId: null,
+        serverCode: null,
+        serverName: null,
+        serverSecret: null
+      }
     }
   },
   mounted: function () {
@@ -161,6 +235,58 @@ export default {
       }
       this.$router.push(data)
     },
+    showInsert() {
+      this.insertForm.serverCode = null
+      this.insertForm.serverName = null
+      this.insertForm.serverSecret = null
+      this.insertVisible = true;
+    },
+    insert() {
+      insertServer(this.insertForm)
+          .then((response) => {
+            if (response.code === CONSTANTS.SUCCESS_CODE) {
+              this.search();
+              this.insertVisible = false
+              this.insertForm.serverCode = null
+              this.insertForm.serverName = null
+              this.insertForm.serverSecret = null
+            }
+          })
+          .catch((err) => {
+          })
+    },
+    showEdit(row) {
+      this.editForm.serverId = row.serverId
+      this.editForm.serverCode = row.serverCode
+      this.editForm.serverName = row.serverName
+      this.editForm.serverSecret = row.serverSecret
+      this.editVisible = true
+    },
+    edit() {
+      updateServer(this.editForm)
+          .then((response) => {
+            if (response.code === CONSTANTS.SUCCESS_CODE) {
+              this.search();
+              this.editVisible = false
+              this.editForm.serverId = null
+              this.editForm.serverCode = null
+              this.editForm.serverName = null
+              this.editForm.serverSecret = null
+            }
+          })
+          .catch((err) => {
+          })
+    },
+    remove(row) {
+      deleteServer({serverId: row.serverId})
+          .then((response) => {
+            if (response.code === CONSTANTS.SUCCESS_CODE) {
+              this.search();
+            }
+          })
+          .catch((err) => {
+          })
+    }
   }
 }
 </script>

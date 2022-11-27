@@ -26,6 +26,9 @@
           <el-button type="primary" @click="search">
             搜索
           </el-button>
+          <el-button type="primary" @click="showInsert">
+            新增
+          </el-button>
         </el-form-item>
       </el-form>
 
@@ -41,13 +44,11 @@
           style="width: 100%">
         <el-table-column
             prop="id"
-            label="ID"
-            width="180">
+            label="ID">
         </el-table-column>
         <el-table-column
             prop="account"
-            label="账号"
-            width="180">
+            label="账号">
         </el-table-column>
         <el-table-column
             prop="username"
@@ -65,6 +66,20 @@
             prop="updateTime"
             label="更新时间">
         </el-table-column>
+        <el-table-column
+            align="center"
+            label="操作"
+            fixed="right"
+            width="120">
+          <template slot-scope="scope">
+            <el-button type="text" @click="showEdit(scope.row)">
+              编辑
+            </el-button>
+            <el-button type="text" @click="remove(scope.row)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-row>
     <el-row type="flex" justify="center" style="margin-top:20px">
@@ -76,13 +91,62 @@
       />
     </el-row>
 
+    <el-dialog title="新增管理员" :visible.sync="insertVisible">
+      <el-form :model="insertForm" label-position="right" label-width="120px">
+        <el-form-item label="账号">
+          <el-input v-model="insertForm.account" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input v-model="insertForm.username" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="insertForm.email" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="insertForm.password" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="insertVisible = false">
+          取 消
+        </el-button>
+        <el-button type="primary" @click="insert">
+          确 定
+        </el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog title="编辑管理员" :visible.sync="editVisible">
+      <el-form :model="editForm" label-position="right" label-width="120px">
+        <el-form-item label="账号">
+          <el-input v-model="editForm.account" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input v-model="editForm.username" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="editForm.email" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="editForm.password" placeHolder="请输入" style="width: 300px"/>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="editVisible = false">
+          取 消
+        </el-button>
+        <el-button type="primary" @click="edit">
+          确 定
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 
 <script>
 import {CONSTANTS} from '@/api/common'
-import {getAdministrators} from '@/api/admin'
+import {getAdministrators, insertAdministrator, updateAdministrator, deleteAdministrator} from '@/api/admin'
 
 export default {
   name: 'Administrator',
@@ -103,6 +167,21 @@ export default {
         records: []
       },
       tableLoading: false,
+      insertVisible: false,
+      insertForm: {
+        account: null,
+        username: null,
+        password: null,
+        email: null
+      },
+      editVisible: false,
+      editForm: {
+        id: null,
+        account: null,
+        username: null,
+        password: null,
+        email: null
+      },
     }
   },
   mounted: function () {
@@ -134,6 +213,62 @@ export default {
             this.tableLoading = false
           })
     },
+    showInsert() {
+      this.insertForm.account = null
+      this.insertForm.username = null
+      this.insertForm.email = null
+      this.insertForm.password = null
+      this.insertVisible = true;
+    },
+    insert() {
+      insertAdministrator(this.insertForm)
+          .then((response) => {
+            if (response.code === CONSTANTS.SUCCESS_CODE) {
+              this.search();
+              this.insertVisible = false
+              this.insertForm.account = null
+              this.insertForm.username = null
+              this.insertForm.email = null
+              this.insertForm.password = null
+            }
+          })
+          .catch((err) => {
+          })
+    },
+    showEdit(row) {
+      this.editForm.id = row.id
+      this.editForm.account = row.account
+      this.editForm.username = row.username
+      this.editForm.email = row.email
+      this.editForm.password = row.password
+      this.editVisible = true
+    },
+    edit() {
+      updateAdministrator(this.editForm)
+          .then((response) => {
+            if (response.code === CONSTANTS.SUCCESS_CODE) {
+              this.search();
+              this.editVisible = false
+              this.editForm.id = null
+              this.editForm.account = null
+              this.editForm.username = null
+              this.editForm.email = null
+              this.editForm.password = null
+            }
+          })
+          .catch((err) => {
+          })
+    },
+    remove(row) {
+      deleteAdministrator({id: row.id})
+          .then((response) => {
+            if (response.code === CONSTANTS.SUCCESS_CODE) {
+              this.search();
+            }
+          })
+          .catch((err) => {
+          })
+    }
   }
 }
 </script>

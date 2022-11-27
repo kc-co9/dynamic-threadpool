@@ -41,7 +41,7 @@ export function insertAdministrator(data) {
 
 export function updateAdministrator(data) {
     return request({
-        url: '/console/administrator/updateAdministrator',
+        url: '/console/administrator/v1/updateAdministrator',
         method: 'post',
         data: data
     })
@@ -49,7 +49,7 @@ export function updateAdministrator(data) {
 
 export function deleteAdministrator(data) {
     return request({
-        url: '/console/administrator/deleteAdministrator',
+        url: '/console/administrator/v1/deleteAdministrator',
         method: 'post',
         data: data
     })
