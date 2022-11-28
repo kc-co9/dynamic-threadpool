@@ -69,7 +69,7 @@ public class DtpExecutorService {
     }
 
     @Lock(key = "#serverId + ':' + #serverIp", timeout = 3L)
-    public boolean configureExecutor(Long serverId, String serverIp, String executorId, ExecutorConfigBo configBody) {
+    public boolean configureExecutor(Long serverId, String serverIp, String executorId, ExecutorConfigBo executorConfig) {
         ExecutorMonitorDo executorMonitorDo = springDomainFactory.newExecutorMonitor(serverId, serverIp);
 
         boolean isRunning = executorMonitorDo.isRunning();
@@ -77,7 +77,7 @@ public class DtpExecutorService {
             throw new BusinessException("report error, executor is down");
         }
 
-        return executorMonitorDo.configure(executorId, configBody);
+        return executorMonitorDo.configure(executorId, executorConfig);
     }
 
 

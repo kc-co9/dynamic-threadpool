@@ -13,6 +13,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -24,26 +25,36 @@ public class ExecutorConsoleController {
     private DtpExecutorService dtpExecutorService;
 
     @Auth
-    @ApiOperation(value = "获取线程池配置")
+    @ApiOperation(value = "获取线程池配置列表")
     @GetMapping(value = "/v1/getExecutorList")
     public ExecutorSearchResponse getExecutorList(@ModelAttribute @Validated ExecutorSearchRequest request) {
         List<ExecutorConfigBo> executorConfigList = dtpExecutorService.lookupExecutorInfo(request.getServerId(), request.getServerIp());
-        List<ExecutorStatisticsBo> executorStatisticsList = dtpExecutorService.lookupExecutorStatistics(request.getServerId(), request.getServerIp());
         List<ExecutorConfigBo> configResult = executorConfigList.stream()
                 .filter(item -> StringUtils.isBlank(request.getExecutorId()) || item.getExecutorId().equals(request.getExecutorId()))
                 .filter(item -> StringUtils.isBlank(request.getExecutorName()) || item.getExecutorName().equals(request.getExecutorName()))
                 .collect(Collectors.toList());
-        List<ExecutorStatisticsBo> statisticsResult = executorStatisticsList.stream()
+        return new ExecutorSearchResponse(configResult);
+    }
+
+    @Auth
+    @ApiOperation(value = "获取线程池配置详情")
+    @GetMapping(value = "/v1/getExecutorDetail")
+    public ExecutorDetailGetResponse getExecutorDetail(@ModelAttribute @Validated ExecutorDetailGetRequest request) {
+        List<ExecutorConfigBo> executorConfigList = dtpExecutorService.lookupExecutorInfo(request.getServerId(), request.getServerIp());
+        List<ExecutorStatisticsBo> executorStatisticsList = dtpExecutorService.lookupExecutorStatistics(request.getServerId(), request.getServerIp());
+        Optional<ExecutorConfigBo> executorConfigBo = executorConfigList.stream()
                 .filter(item -> StringUtils.isBlank(request.getExecutorId()) || item.getExecutorId().equals(request.getExecutorId()))
-                .filter(item -> StringUtils.isBlank(request.getExecutorName()) || item.getExecutorName().equals(request.getExecutorName()))
-                .collect(Collectors.toList());
-        return new ExecutorSearchResponse(configResult, statisticsResult);
+                .findFirst();
+        Optional<ExecutorStatisticsBo> executorStatisticsBo = executorStatisticsList.stream()
+                .filter(item -> StringUtils.isBlank(request.getExecutorId()) || item.getExecutorId().equals(request.getExecutorId()))
+                .findFirst();
+        return new ExecutorDetailGetResponse(executorConfigBo.orElse(null), executorStatisticsBo.orElse(null));
     }
 
     @Auth
     @ApiOperation(value = "配置线程池")
     @PostMapping(value = "/v1/configureExecutor")
     public void configureExecutor(@RequestBody @Validated ExecutorConfigureRequest request) {
-        dtpExecutorService.configureExecutor(request.getServerId(), request.getServerIp(), request.getExecutorId(), request.getConfigBody());
+        dtpExecutorService.configureExecutor(request.getServerId(), request.getServerIp(), request.getExecutorId(), request.getExecutorConfig());
     }
 }

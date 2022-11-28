@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.*;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -45,33 +46,39 @@ public abstract class AbstractExecutorReporter implements Reporter {
                             .map(entry -> {
 
                                 String executorId = entry.getKey();
+                                ThreadPoolExecutor threadPoolExecutor = entry.getValue();
+
                                 String executorName = "";
-                                if (entry.getValue() instanceof DynamicThreadPoolExecutor) {
-                                    executorName = ((DynamicThreadPoolExecutor) entry.getValue()).getExecutorName();
+                                if (threadPoolExecutor instanceof DynamicThreadPoolExecutor) {
+                                    executorName = ((DynamicThreadPoolExecutor) threadPoolExecutor).getExecutorName();
                                 }
 
-                                ExecutorConfigBo configBody = new ExecutorConfigBo();
-                                configBody.setExecutorId(executorId);
-                                configBody.setExecutorName(executorName);
-                                configBody.setCorePoolSize(entry.getValue().getCorePoolSize());
-                                configBody.setMaximumPoolSize(entry.getValue().getMaximumPoolSize());
-                                configBody.setKeepAliveTime(entry.getValue().getKeepAliveTime(TimeUnit.SECONDS));
-                                configBody.setRejectedStrategy(RejectedStrategy.parse(entry.getValue().getRejectedExecutionHandler()));
+                                ExecutorConfigBo executorConfigBo = new ExecutorConfigBo();
+                                executorConfigBo.setExecutorId(executorId);
+                                executorConfigBo.setExecutorName(executorName);
+                                executorConfigBo.setCorePoolSize(threadPoolExecutor.getCorePoolSize());
+                                executorConfigBo.setMaximumPoolSize(threadPoolExecutor.getMaximumPoolSize());
+                                executorConfigBo.setKeepAliveTime(threadPoolExecutor.getKeepAliveTime(TimeUnit.SECONDS));
+                                executorConfigBo.setRejectedStrategy(
+                                        RejectedStrategy.parse(threadPoolExecutor.getRejectedExecutionHandler()));
 
-                                ExecutorStatisticsBo statisticsBody = new ExecutorStatisticsBo();
-                                statisticsBody.setExecutorId(executorId);
-                                statisticsBody.setExecutorName(executorName);
-                                statisticsBody.setPoolSize(entry.getValue().getPoolSize());
-                                statisticsBody.setLargestPoolSize(entry.getValue().getLargestPoolSize());
-                                statisticsBody.setActiveCount(entry.getValue().getActiveCount());
-                                statisticsBody.setTaskCount(entry.getValue().getTaskCount());
-                                statisticsBody.setCompletedTaskCount(entry.getValue().getCompletedTaskCount());
+                                ExecutorStatisticsBo executorStatisticsBo = new ExecutorStatisticsBo();
+                                executorStatisticsBo.setExecutorId(executorId);
+                                executorStatisticsBo.setExecutorName(executorName);
+                                executorStatisticsBo.setQueueClass(threadPoolExecutor.getQueue().getClass().getSimpleName());
+                                executorStatisticsBo.setQueueNodeCount(threadPoolExecutor.getQueue().size());
+                                executorStatisticsBo.setQueueRemainingCapacity(threadPoolExecutor.getQueue().remainingCapacity());
+                                executorStatisticsBo.setPoolSize(threadPoolExecutor.getPoolSize());
+                                executorStatisticsBo.setLargestPoolSize(threadPoolExecutor.getLargestPoolSize());
+                                executorStatisticsBo.setActiveCount(threadPoolExecutor.getActiveCount());
+                                executorStatisticsBo.setTaskCount(threadPoolExecutor.getTaskCount());
+                                executorStatisticsBo.setCompletedTaskCount(threadPoolExecutor.getCompletedTaskCount());
 
                                 ExecutorReportDto executorReportDto = new ExecutorReportDto();
                                 executorReportDto.setExecutorId(executorId);
                                 executorReportDto.setExecutorName(executorName);
-                                executorReportDto.setConfigBody(configBody);
-                                executorReportDto.setStatisticsBody(statisticsBody);
+                                executorReportDto.setConfigBody(executorConfigBo);
+                                executorReportDto.setStatisticsBody(executorStatisticsBo);
 
                                 return executorReportDto;
                             }).collect(Collectors.toList());

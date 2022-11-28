@@ -92,6 +92,11 @@ export const constantRoutes = [
             name: 'Executor',
             component: () => import('@/views/executor/index'),
             meta: {title: '线程池管理', icon: 'el-icon-s-help'},
+        }, {
+            path: 'detail',
+            name: 'ExecutorDetail',
+            component: () => import('@/views/executor/detail'),
+            meta: {title: '线程池详情', icon: 'el-icon-s-help'},
         }]
     },
 

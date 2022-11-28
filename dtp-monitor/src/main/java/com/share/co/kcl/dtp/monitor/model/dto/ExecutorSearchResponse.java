@@ -1,14 +1,10 @@
 package com.share.co.kcl.dtp.monitor.model.dto;
 
 import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
-import com.share.co.kcl.dtp.common.model.bo.ExecutorStatisticsBo;
-import com.share.co.kcl.dtp.common.utils.FunctionUtils;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Data
@@ -19,14 +15,12 @@ public class ExecutorSearchResponse {
     public ExecutorSearchResponse() {
     }
 
-    public ExecutorSearchResponse(List<ExecutorConfigBo> configResult, List<ExecutorStatisticsBo> statisticsResult) {
-        Map<String, ExecutorStatisticsBo> statisticsMap = FunctionUtils.mappingMap(statisticsResult, ExecutorStatisticsBo::getExecutorId, Function.identity());
+    public ExecutorSearchResponse(List<ExecutorConfigBo> configResult) {
         this.executorList = configResult.stream().map(executorConfigBo -> {
             ServerExecutor serverExecutor = new ServerExecutor();
             serverExecutor.setExecutorId(executorConfigBo.getExecutorId());
             serverExecutor.setExecutorName(executorConfigBo.getExecutorName());
-            serverExecutor.setConfigBody(executorConfigBo);
-            serverExecutor.setStatisticsBody(statisticsMap.get(executorConfigBo.getExecutorId()));
+            serverExecutor.setExecutorConfig(executorConfigBo);
             return serverExecutor;
         }).collect(Collectors.toList());
     }
@@ -41,9 +35,6 @@ public class ExecutorSearchResponse {
         private String executorName;
 
         @ApiModelProperty(value = "线程池配置信息")
-        private ExecutorConfigBo configBody;
-
-        @ApiModelProperty(value = "线程池数据统计")
-        private ExecutorStatisticsBo statisticsBody;
+        private ExecutorConfigBo executorConfig;
     }
 }
