@@ -1,9 +1,5 @@
 package com.share.co.kcl.dtp.core.reporter;
 
-import com.share.co.kcl.dtp.common.enums.RejectedStrategy;
-import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
-import com.share.co.kcl.dtp.common.model.dto.ExecutorReportDto;
-import com.share.co.kcl.dtp.common.model.bo.ExecutorStatisticsBo;
 import com.share.co.kcl.dtp.common.utils.NetworkUtils;
 import com.share.co.kcl.dtp.core.DynamicThreadPoolExecutor;
 import com.share.co.kcl.dtp.core.monitor.ExecutorMonitor;
@@ -12,10 +8,9 @@ import lombok.Setter;
 
 import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public abstract class AbstractExecutorReporter implements Reporter {
+public abstract class AbstractExecutorReporter<T> implements Reporter {
 
     @Getter
     @Setter
@@ -39,48 +34,15 @@ public abstract class AbstractExecutorReporter implements Reporter {
             @Override
             public void run() {
                 try {
-                    List<ExecutorReportDto> reportBodies = ExecutorMonitor.watch()
+                    List<T> reportBodies = ExecutorMonitor.watch()
                             .entrySet()
                             .stream()
                             .sorted(Map.Entry.comparingByKey())
                             .map(entry -> {
-
-                                String executorId = entry.getKey();
-                                ThreadPoolExecutor threadPoolExecutor = entry.getValue();
-
-                                String executorName = "";
-                                if (threadPoolExecutor instanceof DynamicThreadPoolExecutor) {
-                                    executorName = ((DynamicThreadPoolExecutor) threadPoolExecutor).getExecutorName();
-                                }
-
-                                ExecutorConfigBo executorConfigBo = new ExecutorConfigBo();
-                                executorConfigBo.setExecutorId(executorId);
-                                executorConfigBo.setExecutorName(executorName);
-                                executorConfigBo.setCorePoolSize(threadPoolExecutor.getCorePoolSize());
-                                executorConfigBo.setMaximumPoolSize(threadPoolExecutor.getMaximumPoolSize());
-                                executorConfigBo.setKeepAliveTime(threadPoolExecutor.getKeepAliveTime(TimeUnit.SECONDS));
-                                executorConfigBo.setRejectedStrategy(
-                                        RejectedStrategy.parse(threadPoolExecutor.getRejectedExecutionHandler()));
-
-                                ExecutorStatisticsBo executorStatisticsBo = new ExecutorStatisticsBo();
-                                executorStatisticsBo.setExecutorId(executorId);
-                                executorStatisticsBo.setExecutorName(executorName);
-                                executorStatisticsBo.setQueueClass(threadPoolExecutor.getQueue().getClass().getSimpleName());
-                                executorStatisticsBo.setQueueNodeCount(threadPoolExecutor.getQueue().size());
-                                executorStatisticsBo.setQueueRemainingCapacity(threadPoolExecutor.getQueue().remainingCapacity());
-                                executorStatisticsBo.setPoolSize(threadPoolExecutor.getPoolSize());
-                                executorStatisticsBo.setLargestPoolSize(threadPoolExecutor.getLargestPoolSize());
-                                executorStatisticsBo.setActiveCount(threadPoolExecutor.getActiveCount());
-                                executorStatisticsBo.setTaskCount(threadPoolExecutor.getTaskCount());
-                                executorStatisticsBo.setCompletedTaskCount(threadPoolExecutor.getCompletedTaskCount());
-
-                                ExecutorReportDto executorReportDto = new ExecutorReportDto();
-                                executorReportDto.setExecutorId(executorId);
-                                executorReportDto.setExecutorName(executorName);
-                                executorReportDto.setConfigBody(executorConfigBo);
-                                executorReportDto.setStatisticsBody(executorStatisticsBo);
-
-                                return executorReportDto;
+                                String executorId = computeExecutorId(entry);
+                                String executorName = computeExecutorName(entry);
+                                ThreadPoolExecutor executorObject = computeExecutorObject(entry);
+                                return buildReportBodies(executorId, executorName, executorObject);
                             }).collect(Collectors.toList());
                     AbstractExecutorReporter.this.sendReport(serverCode, serverSecret, serverIp, reportBodies);
                 } catch (Exception ignore) {
@@ -89,6 +51,39 @@ public abstract class AbstractExecutorReporter implements Reporter {
             }
         }, 1000, 5000);
     }
+
+    private String computeExecutorId(Map.Entry<String, ThreadPoolExecutor> entry) {
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        String executorId = entry.getKey();
+        return executorId;
+    }
+
+    private String computeExecutorName(Map.Entry<String, ThreadPoolExecutor> entry) {
+        String executorName = "";
+
+        ThreadPoolExecutor threadPoolExecutor = this.computeExecutorObject(entry);
+        if (threadPoolExecutor instanceof DynamicThreadPoolExecutor) {
+            executorName = ((DynamicThreadPoolExecutor) threadPoolExecutor).getExecutorName();
+        }
+
+        return executorName;
+    }
+
+    private ThreadPoolExecutor computeExecutorObject(Map.Entry<String, ThreadPoolExecutor> entry) {
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        ThreadPoolExecutor threadPoolExecutor = entry.getValue();
+        return threadPoolExecutor;
+    }
+
+    /**
+     * build the report body
+     *
+     * @param executorId         executor id
+     * @param executorName       executor name
+     * @param threadPoolExecutor executor object
+     * @return report body
+     */
+    protected abstract T buildReportBodies(String executorId, String executorName, ThreadPoolExecutor threadPoolExecutor);
 
     /**
      * send the report body to remote
@@ -99,5 +94,5 @@ public abstract class AbstractExecutorReporter implements Reporter {
      * @param reportBodies report bodies
      * @return success / false
      */
-    protected abstract boolean sendReport(String serverCode, String serverSecret, String serverIp, List<ExecutorReportDto> reportBodies);
+    protected abstract boolean sendReport(String serverCode, String serverSecret, String serverIp, List<T> reportBodies);
 }

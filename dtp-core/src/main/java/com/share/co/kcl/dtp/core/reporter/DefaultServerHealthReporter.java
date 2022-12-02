@@ -32,19 +32,14 @@ public class DefaultServerHealthReporter extends AbstractServerHealthReporter {
         params.put("serverCode", serverCode);
         params.put("serverIp", serverIp);
 
-        ResponseBody responseBody = HttpUtils.doGet(reportLink, headers, params);
-        try {
-            JSONObject response = JSON.parseObject(responseBody.string());
-            Integer responseCode = response.getInteger("code");
-            String responseMsg = response.getString("msg");
-            if (!ResultCode.SUCCESS.getCode().equals(responseCode)) {
-                LOG.error("executor reporter request remote server failure, error msg: {}", responseMsg);
-                return false;
-            }
-            return true;
-        } catch (IOException e) {
-            LOG.error("executor reporter parses response failure", e);
+        String result = HttpUtils.doGet(reportLink, headers, params);
+        JSONObject response = JSON.parseObject(result);
+        Integer responseCode = response.getInteger("code");
+        String responseMsg = response.getString("msg");
+        if (!ResultCode.SUCCESS.getCode().equals(responseCode)) {
+            LOG.error("executor reporter request remote server failure, error msg: {}", responseMsg);
             return false;
         }
+        return true;
     }
 }

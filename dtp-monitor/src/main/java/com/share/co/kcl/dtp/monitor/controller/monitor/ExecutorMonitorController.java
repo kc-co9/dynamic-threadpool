@@ -30,35 +30,44 @@ public class ExecutorMonitorController {
     private SpringDomainFactory springDomainFactory;
 
     @Sign
-    @ApiOperation(value = "上报线程池信息")
-    @PostMapping(value = "/v1/reportExecutorInfo")
-    public void reportExecutorInfo(@RequestBody @Validated ExecutorReportRequest request) {
+    @ApiOperation(value = "上报线程池配置信息")
+    @PostMapping(value = "/v1/reportExecutorConfig")
+    public void reportExecutorConfig(@RequestBody @Validated ExecutorConfigReportRequest request) {
         DtpServer server = dtpServerService.getByCode(request.getServerCode())
                 .orElseThrow(() -> new BusinessException("server is down or not exist"));
-        dtpExecutorService.reportExecutorInfo(server.getId(), request.getServerIp(), request.getExecutorList());
+        dtpExecutorService.reportExecutorConfig(server.getId(), request.getServerIp(), request.getExecutorConfigList());
     }
 
     @Sign
-    @ApiOperation(value = "检测线程池同步")
-    @GetMapping(value = "/v1/checkExecutorSync")
-    public ExecutorSyncCheckResponse checkExecutorSync(@ModelAttribute @Validated ExecutorSyncCheckRequest request) {
+    @ApiOperation(value = "上报线程池统计信息")
+    @PostMapping(value = "/v1/reportExecutorStatistics")
+    public void reportExecutorStatistics(@RequestBody @Validated ExecutorStatisticsReportRequest request) {
         DtpServer server = dtpServerService.getByCode(request.getServerCode())
                 .orElseThrow(() -> new BusinessException("server is down or not exist"));
-        boolean isSync = dtpExecutorService.checkExecutorSync(server.getId(), request.getServerIp());
-        return new ExecutorSyncCheckResponse(isSync);
+        dtpExecutorService.reportExecutorStatistics(server.getId(), request.getServerIp(), request.getExecutorStatisticsList());
     }
 
     @Sign
-    @ApiOperation(value = "查询线程池同步数据")
-    @GetMapping(value = "/v1/lookupExecutorSync")
-    public ExecutorSyncLookupResponse lookupExecutorSync(@ModelAttribute @Validated ExecutorSyncLookupRequest request) {
+    @ApiOperation(value = "检测线程池更新")
+    @GetMapping(value = "/v1/checkExecutorUpdate")
+    public ExecutorUpdateCheckResponse checkExecutorUpdate(@ModelAttribute @Validated ExecutorUpdateCheckRequest request) {
+        DtpServer server = dtpServerService.getByCode(request.getServerCode())
+                .orElseThrow(() -> new BusinessException("server is down or not exist"));
+        boolean isNeedToSync = dtpExecutorService.checkExecutorUpdate(server.getId(), request.getServerIp());
+        return new ExecutorUpdateCheckResponse(isNeedToSync);
+    }
+
+    @Sign
+    @ApiOperation(value = "查询线程池更新数据")
+    @GetMapping(value = "/v1/lookupExecutorUpdate")
+    public ExecutorUpdateLookupResponse lookupExecutorUpdate(@ModelAttribute @Validated ExecutorUpdateLookupRequest request) {
         DtpServer server = dtpServerService.getByCode(request.getServerCode())
                 .orElseThrow(() -> new BusinessException("server is down or not exist"));
         List<ExecutorConfigBo> executorConfigList = dtpExecutorService.lookupExecutorInfo(server.getId(), request.getServerIp());
         List<ExecutorConfigBo> configResult = executorConfigList.stream()
-                .filter(item -> springDomainFactory.newExecutorMonitor(server.getId(), request.getServerIp()).isSync(item.getExecutorId()))
+                .filter(item -> springDomainFactory.newExecutorMonitor(server.getId(), request.getServerIp()).isChange(item.getExecutorId()))
                 .collect(Collectors.toList());
-        return new ExecutorSyncLookupResponse(configResult);
+        return new ExecutorUpdateLookupResponse(configResult);
     }
 
 

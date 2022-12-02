@@ -31,7 +31,7 @@ public abstract class AbstractServerHealthReporter implements Reporter {
             @Override
             public void run() {
                 try {
-                    AbstractServerHealthReporter.this.sendReport(serverCode, serverSecret, serverIp);
+                    sendReport(serverCode, serverSecret, serverIp);
                 } catch (Exception ignore) {
                     // ignore any exception
                 }

@@ -2,13 +2,17 @@ package com.share.co.kcl.dtp.monitor.model.domain;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
+import com.share.co.kcl.dtp.common.enums.SyncStatus;
 import com.share.co.kcl.dtp.common.exception.BusinessException;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
-import com.share.co.kcl.dtp.common.model.dto.ExecutorReportDto;
+import com.share.co.kcl.dtp.common.model.dto.ExecutorConfigReportDto;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorStatisticsBo;
+import com.share.co.kcl.dtp.common.model.dto.ExecutorStatisticsReportDto;
 import com.share.co.kcl.dtp.common.utils.FunctionUtils;
 import com.share.co.kcl.dtp.monitor.factory.SpringDomainFactory;
 import com.share.co.kcl.dtp.monitor.model.Domain;
+import com.share.co.kcl.dtp.monitor.model.po.DtpExecutorStatisticsHistory;
+import com.share.co.kcl.dtp.monitor.service.DtpExecutorStatisticsHistoryService;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,8 +24,8 @@ import java.util.function.Function;
 
 public class ExecutorMonitorDo extends Domain {
 
-    private static final String SERVER_EXECUTOR_CONFIG_INFO_MONITOR = "server_executor_config_info_monitor:%s";
-    private static final String SERVER_EXECUTOR_CONFIG_SYNC_MONITOR = "server_executor_config_sync_monitor:%s";
+    private static final String SERVER_EXECUTOR_CONFIG_MONITOR = "server_executor_config_monitor:%s";
+    private static final String SERVER_EXECUTOR_SYNC_STATUS_MONITOR = "server_executor_sync_status_monitor:%s";
     private static final String SERVER_EXECUTOR_STATISTICS_MONITOR = "server_executor_statistics_monitor:%s";
 
     // the executor monitor created by invoker is setting params, and it not accepts reported data.
@@ -39,17 +43,17 @@ public class ExecutorMonitorDo extends Domain {
     /**
      * the redis key which is used to store executor config info.
      */
-    private final String monitorConfigInfoRedis;
+    private final String monitorExecutorConfigRedis;
 
     /**
      * the redis key which is used to store executor config sync.
      */
-    private final String monitorConfigSyncRedis;
+    private final String monitorExecutorSyncStatusRedis;
 
     /**
      * the redis key which is used to store executor statistics.
      */
-    private final String monitorStatisticsRedis;
+    private final String monitorExecutorStatisticsRedis;
 
     /**
      * the executor monitor state
@@ -72,9 +76,9 @@ public class ExecutorMonitorDo extends Domain {
         this.serverId = serverId;
         this.serverIp = serverIp;
         this.serverMonitor = this.getSpringDomainFactory().newServerMonitor(serverId);
-        this.monitorConfigInfoRedis = String.format(SERVER_EXECUTOR_CONFIG_INFO_MONITOR, this.serverId);
-        this.monitorConfigSyncRedis = String.format(SERVER_EXECUTOR_CONFIG_SYNC_MONITOR, this.serverId);
-        this.monitorStatisticsRedis = String.format(SERVER_EXECUTOR_STATISTICS_MONITOR, this.serverId);
+        this.monitorExecutorConfigRedis = String.format(SERVER_EXECUTOR_CONFIG_MONITOR, this.serverId);
+        this.monitorExecutorSyncStatusRedis = String.format(SERVER_EXECUTOR_SYNC_STATUS_MONITOR, this.serverId);
+        this.monitorExecutorStatisticsRedis = String.format(SERVER_EXECUTOR_STATISTICS_MONITOR, this.serverId);
     }
 
     /**
@@ -84,56 +88,79 @@ public class ExecutorMonitorDo extends Domain {
         if (!this.serverMonitor.isRunning()) {
             return false;
         }
-        if (!this.monitorState.compareAndSet(INIT, RUNNING)) {
-            return false;
-        }
+        this.monitorState.set(RUNNING);
         return true;
     }
 
     /**
      * save reported data sent by client
      */
-    public boolean report(List<ExecutorReportDto> reportExecutorList) {
+    public boolean reportConfig(List<ExecutorConfigReportDto> reportExecutorList) {
         if (RUNNING != this.monitorState.get()) {
             throw new BusinessException("the executor is not running");
         }
 
-        List<ExecutorConfigBo> redisConfigInfoList = this.computeRedisConfigInfo(reportExecutorList);
-        Map<String, Boolean> redisConfigSyncMap = this.computeRedisConfigSync(reportExecutorList, redisConfigInfoList);
-        List<ExecutorStatisticsBo> reportStatisticsList = FunctionUtils.mappingList(reportExecutorList, ExecutorReportDto::getStatisticsBody);
+        List<ExecutorConfigBo> executorConfigList = this.computeExecutorConfig(reportExecutorList);
+        Map<String, String> executorSyncStatusMap = this.computeExecutorSyncStatus(reportExecutorList);
 
-        Boolean success1 = this.saveExecutorHash(this.monitorConfigInfoRedis, redisConfigInfoList, 1, TimeUnit.HOURS);
-        Boolean success2 = this.saveExecutorHash(this.monitorConfigSyncRedis, redisConfigSyncMap, 1, TimeUnit.HOURS);
-        Boolean success3 = this.saveExecutorHash(this.monitorStatisticsRedis, reportStatisticsList, 1, TimeUnit.HOURS);
+        Boolean success1 = this.saveExecutorHash(this.monitorExecutorConfigRedis, executorConfigList, 1, TimeUnit.HOURS);
+        Boolean success2 = this.saveExecutorHash(this.monitorExecutorSyncStatusRedis, executorSyncStatusMap, 1, TimeUnit.HOURS);
 
-        return Boolean.TRUE.equals(success1)
-                && Boolean.TRUE.equals(success2)
-                && Boolean.TRUE.equals(success3);
+        return Boolean.TRUE.equals(success1) && Boolean.TRUE.equals(success2);
+    }
+
+    public boolean reportStatistics(List<ExecutorStatisticsReportDto> reportExecutorList) {
+        if (RUNNING != this.monitorState.get()) {
+            throw new BusinessException("the executor is not running");
+        }
+
+        List<ExecutorStatisticsBo> executorStatisticsList = this.computeExecutorStatistics(reportExecutorList);
+        Boolean success = this.saveExecutorHash(this.monitorExecutorStatisticsRedis, executorStatisticsList, 1, TimeUnit.HOURS);
+
+        List<DtpExecutorStatisticsHistory> dtpExecutorStatisticsHistories = FunctionUtils.mappingList(executorStatisticsList, executorStatisticsBo -> {
+            DtpExecutorStatisticsHistory dtpExecutorStatisticsHistory = new DtpExecutorStatisticsHistory();
+            dtpExecutorStatisticsHistory.setServerId(serverId);
+            dtpExecutorStatisticsHistory.setServerName(serverIp);
+            dtpExecutorStatisticsHistory.setExecutorId(executorStatisticsBo.getExecutorId());
+            dtpExecutorStatisticsHistory.setExecutorName(executorStatisticsBo.getExecutorName());
+            dtpExecutorStatisticsHistory.setExecutorQueueClass(executorStatisticsBo.getQueueClass());
+            dtpExecutorStatisticsHistory.setExecutorQueueNodeCount(executorStatisticsBo.getQueueNodeCount());
+            dtpExecutorStatisticsHistory.setExecutorQueueRemainCapacity(executorStatisticsBo.getQueueRemainingCapacity());
+            dtpExecutorStatisticsHistory.setExecutorPoolSize(executorStatisticsBo.getPoolSize());
+            dtpExecutorStatisticsHistory.setExecutorLargestPoolSize(executorStatisticsBo.getLargestPoolSize());
+            dtpExecutorStatisticsHistory.setExecutorActiveCount(executorStatisticsBo.getActiveCount());
+            dtpExecutorStatisticsHistory.setExecutorTaskCount(executorStatisticsBo.getTaskCount());
+            dtpExecutorStatisticsHistory.setExecutorCompletedTaskCount(executorStatisticsBo.getCompletedTaskCount());
+            return dtpExecutorStatisticsHistory;
+        });
+        this.getDtpExecutorStatisticsHistoryService().saveBatchIgnoreEmpty(dtpExecutorStatisticsHistories);
+
+        return Boolean.TRUE.equals(success);
     }
 
     /**
      * configure the executor setting
      */
-    public boolean configure(String executorId, ExecutorConfigBo configUpdateInfo) {
+    public boolean configure(String executorId, ExecutorConfigBo executorConfig) {
         if (RUNNING != this.monitorState.get()) {
             throw new BusinessException("the executor is not running");
         }
 
-        List<ExecutorConfigBo> redisConfigInfoList = this.getRedisConfigInfo();
-        Map<String, Boolean> redisConfigSyncMap = this.getRedisConfigSync();
+        List<ExecutorConfigBo> executorConfigList = this.getExecutorConfig();
+        Map<String, String> executorSyncStatusMap = this.getExecutorSyncStatus();
 
         // replace
-        for (int i = 0; i < redisConfigInfoList.size(); i++) {
-            ExecutorConfigBo redisConfigInfo = redisConfigInfoList.get(i);
+        for (int i = 0; i < executorConfigList.size(); i++) {
+            ExecutorConfigBo redisConfigInfo = executorConfigList.get(i);
             if (Objects.equals(executorId, redisConfigInfo.getExecutorId())) {
-                redisConfigInfoList.set(i, configUpdateInfo);
-                redisConfigSyncMap.put(executorId, false);
+                executorConfigList.set(i, executorConfig);
+                executorSyncStatusMap.put(executorId, SyncStatus.WAITING.name());
                 break;
             }
         }
 
-        Boolean success1 = this.saveExecutorHash(this.monitorConfigInfoRedis, redisConfigInfoList, 1, TimeUnit.HOURS);
-        Boolean success2 = this.saveExecutorHash(this.monitorConfigSyncRedis, redisConfigSyncMap, 1, TimeUnit.HOURS);
+        Boolean success1 = this.saveExecutorHash(this.monitorExecutorConfigRedis, executorConfigList, 1, TimeUnit.HOURS);
+        Boolean success2 = this.saveExecutorHash(this.monitorExecutorSyncStatusRedis, executorSyncStatusMap, 1, TimeUnit.HOURS);
 
         return Boolean.TRUE.equals(success1) && Boolean.TRUE.equals(success2);
     }
@@ -144,16 +171,7 @@ public class ExecutorMonitorDo extends Domain {
     public List<ExecutorConfigBo> lookupConfig() {
         if (RUNNING != this.monitorState.get())
             throw new BusinessException("the executor is not running");
-        return this.getRedisConfigInfo();
-    }
-
-    /**
-     * lookup the executor sync
-     */
-    public Map<String, Boolean> lookupSync() {
-        if (RUNNING != this.monitorState.get())
-            throw new BusinessException("the executor is not running");
-        return this.getRedisConfigSync();
+        return this.getExecutorConfig();
     }
 
     /**
@@ -162,18 +180,27 @@ public class ExecutorMonitorDo extends Domain {
     public List<ExecutorStatisticsBo> lookupStatistics() {
         if (RUNNING != this.monitorState.get())
             throw new BusinessException("the executor is not running");
-        return this.getRedisStatistics();
+        return this.getExecutorStatistics();
+    }
+
+    /**
+     * lookup the executor sync
+     */
+    public Map<String, String> lookupSyncStatus() {
+        if (RUNNING != this.monitorState.get())
+            throw new BusinessException("the executor is not running");
+        return this.getExecutorSyncStatus();
     }
 
     /**
      * check the executor if sync
      */
-    public boolean isSync(String executorId) {
+    public boolean isChange(String executorId) {
         if (RUNNING != this.monitorState.get()) {
             throw new BusinessException("the executor is not running");
         }
-        Map<String, Boolean> redisConfigSyncMap = this.getRedisConfigSync();
-        return Boolean.TRUE.equals(redisConfigSyncMap.get(executorId));
+        Map<String, String> redisConfigSyncMap = this.getExecutorSyncStatus();
+        return SyncStatus.WAITING.name().equals(redisConfigSyncMap.get(executorId));
     }
 
     /**
@@ -184,13 +211,10 @@ public class ExecutorMonitorDo extends Domain {
             return false;
         }
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
-        Boolean isRunning1 = redisTemplate.hasKey(this.monitorConfigInfoRedis);
-        Boolean isRunning2 = redisTemplate.hasKey(this.monitorConfigSyncRedis);
-        Boolean isRunning3 = redisTemplate.hasKey(this.monitorStatisticsRedis);
+        Boolean isRunning1 = redisTemplate.hasKey(this.monitorExecutorConfigRedis);
+        Boolean isRunning2 = redisTemplate.hasKey(this.monitorExecutorSyncStatusRedis);
         return Boolean.TRUE.equals(isRunning1)
-                && Boolean.TRUE.equals(isRunning2)
-                && Boolean.TRUE.equals(isRunning3);
-
+                && Boolean.TRUE.equals(isRunning2);
     }
 
     /**
@@ -214,65 +238,79 @@ public class ExecutorMonitorDo extends Domain {
         return Boolean.TRUE.equals(success);
     }
 
-    private List<ExecutorConfigBo> computeRedisConfigInfo(List<ExecutorReportDto> reportExecutorList) {
-        List<ExecutorConfigBo> redisConfigInfoList = this.getRedisConfigInfo();
+    private List<ExecutorConfigBo> computeExecutorConfig(List<ExecutorConfigReportDto> reportExecutorList) {
+        List<ExecutorConfigBo> redisConfigInfoList = this.getExecutorConfig();
+        List<ExecutorConfigBo> reportConfigInfoList = FunctionUtils.mappingList(reportExecutorList, ExecutorConfigReportDto::getExecutorConfig);
+
         Map<String, ExecutorConfigBo> redisConfigInfoMap = FunctionUtils.mappingMap(redisConfigInfoList, ExecutorConfigBo::getExecutorId, Function.identity());
-        for (ExecutorConfigBo reportConfigBody : FunctionUtils.mappingList(reportExecutorList, ExecutorReportDto::getConfigBody)) {
-            ExecutorConfigBo redisConfigBody = redisConfigInfoMap.get(reportConfigBody.getExecutorId());
-            if (Objects.isNull(redisConfigBody)) {
-                redisConfigInfoList.add(reportConfigBody);
+        for (ExecutorConfigBo executorConfigBo : reportConfigInfoList) {
+            ExecutorConfigBo redisConfigBo = redisConfigInfoMap.get(executorConfigBo.getExecutorId());
+            if (Objects.nonNull(redisConfigBo)) {
+                executorConfigBo.setExecutorId(redisConfigBo.getExecutorId());
+                executorConfigBo.setExecutorName(redisConfigBo.getExecutorName());
+                executorConfigBo.setCorePoolSize(redisConfigBo.getCorePoolSize());
+                executorConfigBo.setMaximumPoolSize(redisConfigBo.getMaximumPoolSize());
+                executorConfigBo.setKeepAliveTime(redisConfigBo.getKeepAliveTime());
+                executorConfigBo.setRejectedStrategy(redisConfigBo.getRejectedStrategy());
             }
         }
-        return redisConfigInfoList;
+        return reportConfigInfoList;
     }
 
-    private Map<String, Boolean> computeRedisConfigSync(List<ExecutorReportDto> reportExecutorList, List<ExecutorConfigBo> redisExecutorConfigList) {
+    private Map<String, String> computeExecutorSyncStatus(List<ExecutorConfigReportDto> reportExecutorList) {
 
-        Map<String, Boolean> redisConfigSyncMap = this.getRedisConfigSync();
+        Map<String, String> result = new HashMap<>();
 
-        Map<String, ExecutorConfigBo> redisExecutorConfigMap = FunctionUtils.mappingMap(redisExecutorConfigList, ExecutorConfigBo::getExecutorId, Function.identity());
+        List<ExecutorConfigBo> redisConfigInfoList = this.getExecutorConfig();
+        Map<String, ExecutorConfigBo> redisConfigInfoMap = FunctionUtils.mappingMap(redisConfigInfoList, ExecutorConfigBo::getExecutorId, Function.identity());
 
-        List<ExecutorConfigBo> reportExecutorConfigList = FunctionUtils.mappingList(reportExecutorList, ExecutorReportDto::getConfigBody);
-        for (ExecutorConfigBo reportConfig : reportExecutorConfigList) {
-            ExecutorConfigBo redisConfigBody = redisExecutorConfigMap.get(reportConfig.getExecutorId());
-            if (Objects.isNull(redisConfigBody)) {
+        List<ExecutorConfigBo> reportConfigInfoList = FunctionUtils.mappingList(reportExecutorList, ExecutorConfigReportDto::getExecutorConfig);
+
+        for (ExecutorConfigBo reportConfig : reportConfigInfoList) {
+            ExecutorConfigBo redisConfig = redisConfigInfoMap.get(reportConfig.getExecutorId());
+            if (Objects.isNull(redisConfig)) {
+                result.put(reportConfig.getExecutorId(), SyncStatus.FINISH.name());
+                continue;
+            }
+            if (Objects.equals(redisConfig.getExecutorName(), reportConfig.getExecutorName())
+                    && Objects.equals(redisConfig.getCorePoolSize(), reportConfig.getCorePoolSize())
+                    && Objects.equals(redisConfig.getMaximumPoolSize(), reportConfig.getMaximumPoolSize())
+                    && Objects.equals(redisConfig.getKeepAliveTime(), reportConfig.getKeepAliveTime())
+                    && Objects.equals(redisConfig.getRejectedStrategy(), reportConfig.getRejectedStrategy())) {
+                result.put(reportConfig.getExecutorId(), SyncStatus.FINISH.name());
                 continue;
             }
 
-            if (Objects.equals(redisConfigBody.getExecutorName(), reportConfig.getExecutorName())
-                    && Objects.equals(redisConfigBody.getCorePoolSize(), reportConfig.getCorePoolSize())
-                    && Objects.equals(redisConfigBody.getMaximumPoolSize(), reportConfig.getMaximumPoolSize())
-                    && Objects.equals(redisConfigBody.getKeepAliveTime(), reportConfig.getKeepAliveTime())
-                    && Objects.equals(redisConfigBody.getRejectedStrategy(), reportConfig.getRejectedStrategy())) {
-                redisConfigSyncMap.put(reportConfig.getExecutorId(), true);
-                continue;
-            }
-
-            redisConfigSyncMap.put(reportConfig.getExecutorId(), false);
+            result.put(reportConfig.getExecutorId(), SyncStatus.WAITING.name());
         }
-
-        return redisConfigSyncMap;
+        return result;
     }
 
-    private List<ExecutorConfigBo> getRedisConfigInfo() {
+    private List<ExecutorStatisticsBo> computeExecutorStatistics(List<ExecutorStatisticsReportDto> reportExecutorList) {
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        List<ExecutorStatisticsBo> executorStatisticsList = FunctionUtils.mappingList(reportExecutorList, ExecutorStatisticsReportDto::getExecutorStatistics);
+        return executorStatisticsList;
+    }
+
+    private List<ExecutorConfigBo> getExecutorConfig() {
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
-        String redisConfigInfoJson = (String) redisTemplate.opsForHash().get(this.monitorConfigInfoRedis, this.serverIp);
+        String redisConfigInfoJson = (String) redisTemplate.opsForHash().get(this.monitorExecutorConfigRedis, this.serverIp);
         List<ExecutorConfigBo> redisConfigInfoList = JSON.parseObject(redisConfigInfoJson, new TypeReference<List<ExecutorConfigBo>>() {
         });
         return Optional.ofNullable(redisConfigInfoList).orElse(new ArrayList<>());
     }
 
-    private Map<String, Boolean> getRedisConfigSync() {
+    private Map<String, String> getExecutorSyncStatus() {
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
-        String configSyncJson = (String) redisTemplate.opsForHash().get(this.monitorConfigSyncRedis, this.serverIp);
-        Map<String, Boolean> configSyncMap = JSON.parseObject(configSyncJson, new TypeReference<Map<String, Boolean>>() {
+        String configSyncStatusJson = (String) redisTemplate.opsForHash().get(this.monitorExecutorSyncStatusRedis, this.serverIp);
+        Map<String, String> configSyncStatusMap = JSON.parseObject(configSyncStatusJson, new TypeReference<Map<String, String>>() {
         });
-        return Optional.ofNullable(configSyncMap).orElse(new HashMap<>());
+        return Optional.ofNullable(configSyncStatusMap).orElse(new HashMap<>());
     }
 
-    private List<ExecutorStatisticsBo> getRedisStatistics() {
+    private List<ExecutorStatisticsBo> getExecutorStatistics() {
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
-        String redisConfigInfoJson = (String) redisTemplate.opsForHash().get(this.monitorStatisticsRedis, this.serverIp);
+        String redisConfigInfoJson = (String) redisTemplate.opsForHash().get(this.monitorExecutorStatisticsRedis, this.serverIp);
         List<ExecutorStatisticsBo> redisStatisticsBos = JSON.parseObject(redisConfigInfoJson, new TypeReference<List<ExecutorStatisticsBo>>() {
         });
         return Optional.ofNullable(redisStatisticsBos).orElse(new ArrayList<>());
@@ -283,9 +321,9 @@ public class ExecutorMonitorDo extends Domain {
      */
     private boolean clear() {
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
-        Boolean success1 = redisTemplate.delete(this.monitorConfigInfoRedis);
-        Boolean success2 = redisTemplate.delete(this.monitorConfigSyncRedis);
-        Boolean success3 = redisTemplate.delete(this.monitorStatisticsRedis);
+        Boolean success1 = redisTemplate.delete(this.monitorExecutorConfigRedis);
+        Boolean success2 = redisTemplate.delete(this.monitorExecutorSyncStatusRedis);
+        Boolean success3 = redisTemplate.delete(this.monitorExecutorStatisticsRedis);
         return Boolean.TRUE.equals(success1)
                 && Boolean.TRUE.equals(success2)
                 && Boolean.TRUE.equals(success3);
@@ -294,6 +332,10 @@ public class ExecutorMonitorDo extends Domain {
     @SuppressWarnings("unchecked")
     private RedisTemplate<String, String> getRedisTemplate() {
         return (RedisTemplate<String, String>) this.applicationContext.getBean("dtpStringRedisTemplate");
+    }
+
+    private DtpExecutorStatisticsHistoryService getDtpExecutorStatisticsHistoryService() {
+        return this.applicationContext.getBean(DtpExecutorStatisticsHistoryService.class);
     }
 
     private SpringDomainFactory getSpringDomainFactory() {

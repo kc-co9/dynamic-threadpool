@@ -1,26 +1,28 @@
 package com.share.co.kcl.dtp.monitor.service;
 
+import com.share.co.kcl.dtp.common.enums.SyncStatus;
 import com.share.co.kcl.dtp.common.exception.BusinessException;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorStatisticsBo;
-import com.share.co.kcl.dtp.common.model.dto.ExecutorReportDto;
+import com.share.co.kcl.dtp.common.model.dto.ExecutorConfigReportDto;
+import com.share.co.kcl.dtp.common.model.dto.ExecutorStatisticsReportDto;
 import com.share.co.kcl.dtp.monitor.processor.annotation.Lock;
 import com.share.co.kcl.dtp.monitor.factory.SpringDomainFactory;
 import com.share.co.kcl.dtp.monitor.model.domain.ExecutorMonitorDo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class DtpExecutorService {
 
-    @Autowired
-    private SpringDomainFactory springDomainFactory;
+    private final SpringDomainFactory springDomainFactory;
 
     @Lock(key = "#serverId + ':' + #serverIp", timeout = 3L, waittime = 1L)
-    public void reportExecutorInfo(Long serverId, String serverIp, List<ExecutorReportDto> executorList) {
+    public void reportExecutorConfig(Long serverId, String serverIp, List<ExecutorConfigReportDto> executorList) {
         ExecutorMonitorDo executorMonitorDo = springDomainFactory.newExecutorMonitor(serverId, serverIp);
 
         boolean isRunning = executorMonitorDo.isRunning() || executorMonitorDo.start();
@@ -28,13 +30,28 @@ public class DtpExecutorService {
             throw new BusinessException("report error, executor is down");
         }
 
-        boolean isReport = executorMonitorDo.report(executorList);
+        boolean isReport = executorMonitorDo.reportConfig(executorList);
         if (!isReport) {
             throw new BusinessException("executor report failure");
         }
     }
 
-    public boolean checkExecutorSync(Long serverId, String serverIp) {
+    @Lock(key = "#serverId + ':' + #serverIp", timeout = 3L, waittime = 1L)
+    public void reportExecutorStatistics(Long serverId, String serverIp, List<ExecutorStatisticsReportDto> executorStatisticsList) {
+        ExecutorMonitorDo executorMonitorDo = springDomainFactory.newExecutorMonitor(serverId, serverIp);
+
+        boolean isRunning = executorMonitorDo.isRunning() || executorMonitorDo.start();
+        if (!isRunning) {
+            throw new BusinessException("report error, executor is down");
+        }
+
+        boolean isReport = executorMonitorDo.reportStatistics(executorStatisticsList);
+        if (!isReport) {
+            throw new BusinessException("executor report failure");
+        }
+    }
+
+    public boolean checkExecutorUpdate(Long serverId, String serverIp) {
         ExecutorMonitorDo executorMonitorDo = springDomainFactory.newExecutorMonitor(serverId, serverIp);
 
         boolean isRunning = executorMonitorDo.isRunning();
@@ -42,8 +59,8 @@ public class DtpExecutorService {
             throw new BusinessException("report error, executor is down");
         }
 
-        Map<String, Boolean> executorSyncMap = executorMonitorDo.lookupSync();
-        return executorSyncMap.entrySet().stream().anyMatch(entry -> Boolean.FALSE.equals(entry.getValue()));
+        Map<String, String> executorSyncStatusMap = executorMonitorDo.lookupSyncStatus();
+        return executorSyncStatusMap.entrySet().stream().anyMatch(entry -> SyncStatus.WAITING.name().equals(entry.getValue()));
     }
 
     public List<ExecutorConfigBo> lookupExecutorInfo(Long serverId, String serverIp) {

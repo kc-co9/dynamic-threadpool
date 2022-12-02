@@ -3,7 +3,7 @@ package com.share.co.kcl.dtp.core;
 import com.share.co.kcl.dtp.core.monitor.ExecutorMonitor;
 import com.share.co.kcl.dtp.core.refresher.DefaultExecutorRefresher;
 import com.share.co.kcl.dtp.core.refresher.Refresher;
-import com.share.co.kcl.dtp.core.reporter.DefaultExecutorReporter;
+import com.share.co.kcl.dtp.core.reporter.DefaultExecutorConfigReporter;
 import com.share.co.kcl.dtp.core.reporter.DefaultServerHealthReporter;
 import com.share.co.kcl.dtp.core.reporter.Reporter;
 import org.junit.Assert;
@@ -74,7 +74,7 @@ public class DynamicThreadPoolExecutorTest {
         Reporter serverReporter = new DefaultServerHealthReporter(serverCode, serverSecret, serverHealthReportLink);
         serverReporter.report();
 
-        Reporter executorReporter = new DefaultExecutorReporter(serverCode, serverSecret, executorInfoReportLink);
+        Reporter executorReporter = new DefaultExecutorConfigReporter(serverCode, serverSecret, executorInfoReportLink);
         executorReporter.report();
 
         Refresher executorRefresher = new DefaultExecutorRefresher(serverCode, serverSecret, checkExecutorSyncLink, pullExecutorSyncLink);

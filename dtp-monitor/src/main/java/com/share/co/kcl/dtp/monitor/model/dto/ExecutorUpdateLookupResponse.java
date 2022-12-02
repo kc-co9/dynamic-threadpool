@@ -11,7 +11,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExecutorSyncLookupResponse {
+public class ExecutorUpdateLookupResponse {
 
     @ApiModelProperty(value = "线程池配置信息")
     private List<ExecutorConfigBo> executorConfigList;

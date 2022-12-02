@@ -1,5 +1,6 @@
 package com.share.co.kcl.dtp.core.refresher;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.share.co.kcl.dtp.common.enums.RejectedStrategy;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
 import com.share.co.kcl.dtp.common.utils.NetworkUtils;
@@ -13,13 +14,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractExecutorRefresher implements Refresher {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractExecutorRefresher.class);
 
-    private final AtomicBoolean shouldSyncFromRemote = new AtomicBoolean(true);
+    private final ScheduledExecutorService consumerThreadPoolExecutor = new ScheduledThreadPoolExecutor(1);
+    private final ScheduledExecutorService producerThreadPoolExecutor = new ScheduledThreadPoolExecutor(1);
 
     private final BlockingQueue<ExecutorConfigBo> refreshQueue = new LinkedBlockingQueue<>();
 
@@ -41,47 +42,37 @@ public abstract class AbstractExecutorRefresher implements Refresher {
 
     @Override
     public void refresh() {
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    if (!shouldSyncFromRemote.get()) {
-                        return;
-                    }
-                    List<ExecutorConfigBo> refreshList = AbstractExecutorRefresher.this.doPull();
-                    for (ExecutorConfigBo refreshContent : refreshList) {
-                        // retry 3 times if offering refresh body is failure
-                        for (int i = 0; i < 3 && !refreshQueue.offer(refreshContent); i++) {
-                        }
-                    }
-                    shouldSyncFromRemote.set(false);
-                } catch (Exception ignore) {
-                    // ignore any exception
-                }
-            }
-        }, 3000, 3000);
-
-        new Thread(() -> {
-            for (; ; ) {
-                try {
-                    ExecutorConfigBo refreshContent = refreshQueue.take();
-                    AbstractExecutorRefresher.this.doUpdate(refreshContent);
-                } catch (Exception ignore) {
-                    // ignore any exception
-                } finally {
-                    shouldSyncFromRemote.set(true);
-                }
-            }
-        }).start();
+        producerThreadPoolExecutor.scheduleAtFixedRate(this::produce, 3000L, 3000L, TimeUnit.MILLISECONDS);
+        consumerThreadPoolExecutor.scheduleAtFixedRate(this::consume, 0L, 1L, TimeUnit.MILLISECONDS);
     }
 
-    protected List<ExecutorConfigBo> doPull() {
-        boolean isShouldSyncExecutor = AbstractExecutorRefresher.this.checkExecutorSync(serverCode, serverIp);
-        if (!isShouldSyncExecutor) {
+    @VisibleForTesting
+    void produce() {
+        try {
+            drainToQueue(fetchUpdate());
+        } catch (Exception ex) {
+            // ignore any exception
+            LOG.debug("produce config throw exception", ex);
+        }
+    }
+
+    @VisibleForTesting
+    void consume() {
+        try {
+            executeUpdate(drainFromQueue());
+        } catch (Exception ex) {
+            // ignore any exception
+            LOG.debug("consume config throw exception", ex);
+        }
+    }
+
+    protected List<ExecutorConfigBo> fetchUpdate() {
+        boolean isNeedToSyncExecutor = this.checkUpdate(serverCode, serverIp);
+        if (!isNeedToSyncExecutor) {
             return Collections.emptyList();
         }
 
-        List<ExecutorConfigBo> executorConfigList = AbstractExecutorRefresher.this.pullExecutorSync(serverCode, serverIp);
+        List<ExecutorConfigBo> executorConfigList = this.fetchUpdate(serverCode, serverIp);
         if (CollectionUtils.isEmpty(executorConfigList)) {
             return Collections.emptyList();
         }
@@ -90,7 +81,10 @@ public abstract class AbstractExecutorRefresher implements Refresher {
         return executorConfigList;
     }
 
-    protected void doUpdate(ExecutorConfigBo refreshContent) {
+    protected void executeUpdate(ExecutorConfigBo refreshContent) {
+        if (Objects.isNull(refreshContent)) {
+            return;
+        }
         ThreadPoolExecutor executor = ExecutorMonitor.watch().get(refreshContent.getExecutorId());
         if (Objects.nonNull(executor)) {
             executor.setCorePoolSize(refreshContent.getCorePoolSize());
@@ -102,22 +96,36 @@ public abstract class AbstractExecutorRefresher implements Refresher {
                 DynamicThreadPoolExecutor dynamicExecutor = ((DynamicThreadPoolExecutor) executor);
                 dynamicExecutor.setExecutorName(refreshContent.getExecutorName());
             }
+        }
+    }
 
-            LOG.info("succeed updating refresh data to thread pool , update content: {}", refreshContent);
+    private ExecutorConfigBo drainFromQueue() throws InterruptedException {
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        ExecutorConfigBo refreshContent = refreshQueue.poll(10, TimeUnit.SECONDS);
+        return refreshContent;
+    }
+
+    private void drainToQueue(List<ExecutorConfigBo> refreshList) {
+        if (CollectionUtils.isEmpty(refreshList)) {
+            return;
+        }
+        for (ExecutorConfigBo refreshContent : refreshList) {
+            // noinspection StatementWithEmptyBody
+            for (int i = 0; i < 3 && !refreshQueue.offer(refreshContent); i++) {
+                // retry 3 times if offering refresh body is failure
+            }
         }
     }
 
     /**
      * look up which should pull refresh config
      */
-    protected abstract boolean checkExecutorSync(String serverCode, String serverIp);
+    protected abstract boolean checkUpdate(String serverCode, String serverIp);
 
     /**
-     * pull refresh config from remote
+     * fetch refresh config from remote
      *
      * @return json data
      */
-    protected abstract List<ExecutorConfigBo> pullExecutorSync(String serverCode, String serverIp);
-
-
+    protected abstract List<ExecutorConfigBo> fetchUpdate(String serverCode, String serverIp);
 }

@@ -6,6 +6,7 @@ import com.share.co.kcl.dtp.monitor.dao.DtpServerDao;
 import com.share.co.kcl.dtp.monitor.model.domain.ServerMonitorDo;
 import com.share.co.kcl.dtp.monitor.factory.SpringDomainFactory;
 import com.share.co.kcl.dtp.monitor.model.po.DtpServer;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,10 +14,10 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class DtpServerService extends DtpBaseService<DtpServerDao, DtpServer> {
 
-    @Autowired
-    private SpringDomainFactory springDomainFactory;
+    private final SpringDomainFactory springDomainFactory;
 
     @Lock(key = "#serverCode + ':' + #serverIp", timeout = 3L, waittime = 1L)
     public void reportHealth(String serverCode, String serverIp) {

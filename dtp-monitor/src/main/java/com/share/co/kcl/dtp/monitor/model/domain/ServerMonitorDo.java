@@ -57,9 +57,7 @@ public class ServerMonitorDo extends Domain {
      * start the server monitor
      */
     public boolean start() {
-        if (!this.monitorState.compareAndSet(INIT, RUNNING)) {
-            return false;
-        }
+        this.monitorState.set(RUNNING);
         return true;
     }
 
@@ -67,8 +65,9 @@ public class ServerMonitorDo extends Domain {
      * save reported data sent by client
      */
     public boolean report(String serverIp) {
-        if (RUNNING != this.monitorState.get())
+        if (RUNNING != this.monitorState.get()) {
             throw new BusinessException("the server is not running");
+        }
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
         redisTemplate.opsForHash().put(this.monitorRedis, serverIp, String.valueOf(DateUtils.valueOfSecond(DateUtils.after(60, ChronoUnit.SECONDS))));
         Boolean success = redisTemplate.expire(this.monitorRedis, 60, TimeUnit.SECONDS);
@@ -84,7 +83,6 @@ public class ServerMonitorDo extends Domain {
         if (RUNNING != this.monitorState.get()) {
             return Collections.emptyList();
         }
-
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
         Set<Map.Entry<String, Long>> reportList = redisTemplate.opsForHash().entries(this.monitorRedis)
                 .entrySet()
@@ -110,8 +108,9 @@ public class ServerMonitorDo extends Domain {
      * check the server if running
      */
     public boolean isRunning() {
-        if (RUNNING != this.monitorState.get())
+        if (RUNNING != this.monitorState.get()) {
             return false;
+        }
         RedisTemplate<String, String> redisTemplate = this.getRedisTemplate();
         Boolean isRunning = redisTemplate.hasKey(this.monitorRedis);
         return Boolean.TRUE.equals(isRunning);
@@ -121,8 +120,9 @@ public class ServerMonitorDo extends Domain {
      * close the server monitor
      */
     public boolean close() {
-        if (CLOSE <= this.monitorState.get())
+        if (CLOSE <= this.monitorState.get()) {
             throw new BusinessException("the server has been closed");
+        }
         if (this.clear()) {
             this.monitorState.set(CLOSE);
             return true;

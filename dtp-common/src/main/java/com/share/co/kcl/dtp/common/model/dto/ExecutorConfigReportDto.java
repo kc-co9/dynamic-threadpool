@@ -1,11 +1,14 @@
 package com.share.co.kcl.dtp.common.model.dto;
 
 import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
-import com.share.co.kcl.dtp.common.model.bo.ExecutorStatisticsBo;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class ExecutorReportDto {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExecutorConfigReportDto {
 
     /**
      * 线程池ID
@@ -20,11 +23,6 @@ public class ExecutorReportDto {
     /**
      * 线程池配置信息
      */
-    private ExecutorConfigBo configBody;
-
-    /**
-     * 线程池统计信息
-     */
-    private ExecutorStatisticsBo statisticsBody;
+    private ExecutorConfigBo executorConfig;
 
 }

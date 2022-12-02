@@ -4,6 +4,7 @@ package com.share.co.kcl.dtp.common.utils;
 import com.alibaba.fastjson2.JSON;
 import com.share.co.kcl.dtp.common.exception.HttpException;
 import okhttp3.*;
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -26,12 +27,15 @@ public class HttpUtils {
     private static final OkHttpClient okHttpClient = new OkHttpClient().newBuilder()
             .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+            // 添加日志拦截器
+            .addInterceptor(
+                    new HttpLoggingInterceptor(HttpLoggingInterceptor.Logger.DEFAULT).setLevel(HttpLoggingInterceptor.Level.BODY))
             .build();
 
     private HttpUtils() {
     }
 
-    public static ResponseBody doGet(String path, Map<String, String> headers, Map<String, String> params) {
+    public static String doGet(String path, Map<String, String> headers, Map<String, String> params) {
         if (StringUtils.isBlank(path)) {
             throw new IllegalArgumentException("url is null");
         }
@@ -53,14 +57,14 @@ public class HttpUtils {
                 LOG.warn("http GET request return exception code:{},body:{}", response.code(), response.body());
                 throw new HttpException("http GET request failure");
             }
-            return response.body();
+            return response.body().string();
         } catch (IOException e) {
             LOG.error("http GET request throw IOException", e);
             throw new HttpException("http GET request failure");
         }
     }
 
-    public static ResponseBody doPost(String path, Map<String, String> headers, Object body) {
+    public static String doPost(String path, Map<String, String> headers, Object body) {
         Headers.Builder headerBuilder = new Headers.Builder();
         headers.forEach(headerBuilder::add);
         Headers requestHeaders = headerBuilder.build();
@@ -75,7 +79,7 @@ public class HttpUtils {
                 LOG.warn("http POST request return exception code:{},body:{}", response.code(), response.body());
                 throw new HttpException("http POST request failure");
             }
-            return response.body();
+            return response.body().string();
         } catch (IOException e) {
             LOG.error("http POST request throw IOException", e);
             throw new HttpException("http POST request failure");

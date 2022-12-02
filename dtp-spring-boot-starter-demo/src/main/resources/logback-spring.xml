@@ -72,7 +72,7 @@
         </rollingPolicy>
     </appender>
 
-    <root level="INFO">
+    <root level="debug">
         <appender-ref ref="consoleLog"/>
     </root>
 

@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExecutorSyncCheckResponse {
+public class ExecutorUpdateCheckResponse {
 
-    @ApiModelProperty(value = "线程池是否已同步")
-    private Boolean isSync;
+    @ApiModelProperty(value = "线程池是否需要同步")
+    private Boolean isNeedToSync;
 }
