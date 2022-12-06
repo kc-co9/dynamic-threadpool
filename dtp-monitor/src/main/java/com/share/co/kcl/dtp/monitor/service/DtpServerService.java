@@ -5,10 +5,9 @@ import com.share.co.kcl.dtp.monitor.processor.annotation.Lock;
 import com.share.co.kcl.dtp.monitor.dao.DtpServerDao;
 import com.share.co.kcl.dtp.monitor.model.domain.ServerMonitorDo;
 import com.share.co.kcl.dtp.monitor.factory.SpringDomainFactory;
-import com.share.co.kcl.dtp.monitor.model.po.DtpServer;
+import com.share.co.kcl.dtp.monitor.model.po.entity.DtpServer;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

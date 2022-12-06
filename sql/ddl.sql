@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `dtp_executor_statistics_history`
 (
     `id`                             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `server_id`                      BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务ID',
+    `server_ip`                      VARCHAR(20)     NOT NULL DEFAULT '' COMMENT '服务IP',
     `server_name`                    VARCHAR(45)     NOT NULL DEFAULT '' COMMENT '服务名称',
     `executor_id`                    VARCHAR(45)     NOT NULL DEFAULT '' COMMENT '线程池ID',
     `executor_name`                  VARCHAR(90)     NOT NULL DEFAULT '' COMMENT '线程池名字',
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `dtp_executor_statistics_history`
     `create_time`                    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`                    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     PRIMARY KEY (`id`) USING BTREE,
-    KEY idx_server_id_executor_id (`server_id`, `executor_id`) USING BTREE
+    KEY idx_server_id_server_ip_executor_id_create_time (`server_id`, `server_ip`, `executor_id`, `create_time`) USING BTREE
 ) ENGINE = INNODB COMMENT = '动态线程池-数据统计记录';
 
 # DROP TABLE IF EXISTS `dtp_administrator`;

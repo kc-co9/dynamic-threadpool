@@ -16,6 +16,14 @@ export function getExecutorDetail(data) {
     })
 }
 
+export function getExecutorStatisticsLineChart(data) {
+    return request({
+        url: '/console/executor/v1/getExecutorStatisticsLineChart',
+        method: 'get',
+        params: data
+    })
+}
+
 export function configureExecutor(data) {
     return request({
         url: '/console/executor/v1/configureExecutor',

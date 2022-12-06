@@ -60,7 +60,7 @@ public class DtpExecutorService {
         }
 
         Map<String, String> executorSyncStatusMap = executorMonitorDo.lookupSyncStatus();
-        return executorSyncStatusMap.entrySet().stream().anyMatch(entry -> SyncStatus.WAITING.name().equals(entry.getValue()));
+        return executorSyncStatusMap.entrySet().stream().anyMatch(entry -> String.valueOf(SyncStatus.WAITING).equals(entry.getValue()));
     }
 
     public List<ExecutorConfigBo> lookupExecutorInfo(Long serverId, String serverIp) {

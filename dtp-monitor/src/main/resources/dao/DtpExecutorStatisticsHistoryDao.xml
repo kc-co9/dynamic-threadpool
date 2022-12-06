@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.share.co.kcl.dtp.monitor.dao.DtpExecutorStatisticsHistoryDao">
+
+    <select id="getLineChart" resultType="com.share.co.kcl.dtp.monitor.model.po.entity.DtpExecutorStatisticsHistory">
+        SELECT dtp_executor_statistics_history.*
+        FROM (SELECT MAX(`id`) AS id
+              FROM dtp_executor_statistics_history
+              WHERE `server_id` = #{serverId}
+                AND `server_ip` = #{serverIp}
+                AND `executor_id` = #{executorId}
+                AND `create_time` >= #{createTimeStart}
+              GROUP BY DATE_FORMAT(`create_time`, #{dateFormat})
+             ) AS tmp
+                 LEFT JOIN dtp_executor_statistics_history ON tmp.`id` = dtp_executor_statistics_history.`id`
+    </select>
+</mapper>

@@ -11,7 +11,7 @@ import com.share.co.kcl.dtp.common.model.dto.ExecutorStatisticsReportDto;
 import com.share.co.kcl.dtp.common.utils.FunctionUtils;
 import com.share.co.kcl.dtp.monitor.factory.SpringDomainFactory;
 import com.share.co.kcl.dtp.monitor.model.Domain;
-import com.share.co.kcl.dtp.monitor.model.po.DtpExecutorStatisticsHistory;
+import com.share.co.kcl.dtp.monitor.model.po.entity.DtpExecutorStatisticsHistory;
 import com.share.co.kcl.dtp.monitor.service.DtpExecutorStatisticsHistoryService;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
@@ -120,7 +120,8 @@ public class ExecutorMonitorDo extends Domain {
         List<DtpExecutorStatisticsHistory> dtpExecutorStatisticsHistories = FunctionUtils.mappingList(executorStatisticsList, executorStatisticsBo -> {
             DtpExecutorStatisticsHistory dtpExecutorStatisticsHistory = new DtpExecutorStatisticsHistory();
             dtpExecutorStatisticsHistory.setServerId(serverId);
-            dtpExecutorStatisticsHistory.setServerName(serverIp);
+            dtpExecutorStatisticsHistory.setServerIp(serverIp);
+            dtpExecutorStatisticsHistory.setServerName("");
             dtpExecutorStatisticsHistory.setExecutorId(executorStatisticsBo.getExecutorId());
             dtpExecutorStatisticsHistory.setExecutorName(executorStatisticsBo.getExecutorName());
             dtpExecutorStatisticsHistory.setExecutorQueueClass(executorStatisticsBo.getQueueClass());
@@ -154,7 +155,7 @@ public class ExecutorMonitorDo extends Domain {
             ExecutorConfigBo redisConfigInfo = executorConfigList.get(i);
             if (Objects.equals(executorId, redisConfigInfo.getExecutorId())) {
                 executorConfigList.set(i, executorConfig);
-                executorSyncStatusMap.put(executorId, SyncStatus.WAITING.name());
+                executorSyncStatusMap.put(executorId, String.valueOf(SyncStatus.WAITING));
                 break;
             }
         }
@@ -269,7 +270,7 @@ public class ExecutorMonitorDo extends Domain {
         for (ExecutorConfigBo reportConfig : reportConfigInfoList) {
             ExecutorConfigBo redisConfig = redisConfigInfoMap.get(reportConfig.getExecutorId());
             if (Objects.isNull(redisConfig)) {
-                result.put(reportConfig.getExecutorId(), SyncStatus.FINISH.name());
+                result.put(reportConfig.getExecutorId(), String.valueOf(SyncStatus.FINISH));
                 continue;
             }
             if (Objects.equals(redisConfig.getExecutorName(), reportConfig.getExecutorName())
@@ -277,11 +278,11 @@ public class ExecutorMonitorDo extends Domain {
                     && Objects.equals(redisConfig.getMaximumPoolSize(), reportConfig.getMaximumPoolSize())
                     && Objects.equals(redisConfig.getKeepAliveTime(), reportConfig.getKeepAliveTime())
                     && Objects.equals(redisConfig.getRejectedStrategy(), reportConfig.getRejectedStrategy())) {
-                result.put(reportConfig.getExecutorId(), SyncStatus.FINISH.name());
+                result.put(reportConfig.getExecutorId(), String.valueOf(SyncStatus.FINISH));
                 continue;
             }
 
-            result.put(reportConfig.getExecutorId(), SyncStatus.WAITING.name());
+            result.put(reportConfig.getExecutorId(), String.valueOf(SyncStatus.WAITING));
         }
         return result;
     }

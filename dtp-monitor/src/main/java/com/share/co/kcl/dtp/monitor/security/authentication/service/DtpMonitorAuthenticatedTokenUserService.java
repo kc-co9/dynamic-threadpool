@@ -1,6 +1,6 @@
 package com.share.co.kcl.dtp.monitor.security.authentication.service;
 
-import com.share.co.kcl.dtp.monitor.model.po.DtpServer;
+import com.share.co.kcl.dtp.monitor.model.po.entity.DtpServer;
 import com.share.co.kcl.dtp.monitor.security.authentication.entity.DtpMonitorAuthenticationToken;
 import com.share.co.kcl.dtp.monitor.security.authentication.entity.DtpMonitorUserDetails;
 import com.share.co.kcl.dtp.monitor.service.DtpServerService;

@@ -1,6 +1,7 @@
 package com.share.co.kcl.dtp.monitor.controller.monitor;
 
-import com.share.co.kcl.dtp.monitor.model.dto.*;
+import com.share.co.kcl.dtp.monitor.model.dto.server.ServerConfigReportRequest;
+import com.share.co.kcl.dtp.monitor.model.dto.server.ServerHealthReportRequest;
 import com.share.co.kcl.dtp.monitor.security.annotation.Sign;
 import com.share.co.kcl.dtp.monitor.service.DtpServerService;
 import io.swagger.annotations.Api;

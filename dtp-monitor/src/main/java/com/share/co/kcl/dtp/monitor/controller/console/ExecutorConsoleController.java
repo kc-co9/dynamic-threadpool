@@ -2,9 +2,11 @@ package com.share.co.kcl.dtp.monitor.controller.console;
 
 import com.share.co.kcl.dtp.common.model.bo.ExecutorConfigBo;
 import com.share.co.kcl.dtp.common.model.bo.ExecutorStatisticsBo;
-import com.share.co.kcl.dtp.monitor.model.dto.*;
+import com.share.co.kcl.dtp.monitor.model.po.entity.DtpExecutorStatisticsHistory;
+import com.share.co.kcl.dtp.monitor.model.vo.executor.*;
 import com.share.co.kcl.dtp.monitor.security.annotation.Auth;
 import com.share.co.kcl.dtp.monitor.service.DtpExecutorService;
+import com.share.co.kcl.dtp.monitor.service.DtpExecutorStatisticsHistoryService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -23,6 +25,8 @@ public class ExecutorConsoleController {
 
     @Autowired
     private DtpExecutorService dtpExecutorService;
+    @Autowired
+    private DtpExecutorStatisticsHistoryService dtpExecutorStatisticsHistoryService;
 
     @Auth
     @ApiOperation(value = "获取线程池配置列表")
@@ -49,6 +53,15 @@ public class ExecutorConsoleController {
                 .filter(item -> StringUtils.isBlank(request.getExecutorId()) || item.getExecutorId().equals(request.getExecutorId()))
                 .findFirst();
         return new ExecutorDetailGetResponse(executorConfigBo.orElse(null), executorStatisticsBo.orElse(null));
+    }
+
+    @Auth
+    @ApiOperation(value = "获取线程池数据统计-折线图")
+    @GetMapping(value = "/v1/getExecutorStatisticsLineChart")
+    public ExecutorStatisticsLineChartResponse getExecutorStatisticsLineChart(@ModelAttribute @Validated ExecutorStatisticsLineChartRequest request) {
+        List<DtpExecutorStatisticsHistory> result =
+                dtpExecutorStatisticsHistoryService.getLineChart(request.getServerId(), request.getServerIp(), request.getExecutorId(), request.getDuration());
+        return new ExecutorStatisticsLineChartResponse(request.getDuration(), result);
     }
 
     @Auth

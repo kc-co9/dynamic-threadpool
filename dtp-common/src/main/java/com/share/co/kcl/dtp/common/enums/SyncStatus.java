@@ -32,5 +32,4 @@ public enum SyncStatus {
                 .filter(o -> StringUtils.equals(o.name(), status))
                 .findFirst();
     }
-
 }

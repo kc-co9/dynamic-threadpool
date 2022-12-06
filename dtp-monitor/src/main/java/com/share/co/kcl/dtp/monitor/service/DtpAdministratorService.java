@@ -2,7 +2,7 @@ package com.share.co.kcl.dtp.monitor.service;
 
 import com.share.co.kcl.dtp.common.exception.ToastException;
 import com.share.co.kcl.dtp.monitor.dao.DtpAdministratorDao;
-import com.share.co.kcl.dtp.monitor.model.po.DtpAdministrator;
+import com.share.co.kcl.dtp.monitor.model.po.entity.DtpAdministrator;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
