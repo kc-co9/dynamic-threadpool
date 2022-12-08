@@ -61,4 +61,14 @@ public class DefaultExecutorStatisticsReporter extends AbstractExecutorReporter<
         }
         return true;
     }
+
+    @Override
+    protected long reportDelay() {
+        return 5000L;
+    }
+
+    @Override
+    protected long reportPeriod() {
+        return 5000L;
+    }
 }

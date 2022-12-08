@@ -60,4 +60,14 @@ public class DefaultExecutorConfigReporter extends AbstractExecutorReporter<Exec
         }
         return true;
     }
+
+    @Override
+    protected long reportDelay() {
+        return 3000L;
+    }
+
+    @Override
+    protected long reportPeriod() {
+        return 3000L;
+    }
 }

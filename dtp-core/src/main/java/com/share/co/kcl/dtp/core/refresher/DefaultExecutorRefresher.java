@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public class DefaultExecutorRefresher extends AbstractExecutorRefresher {
+
     private static final Logger LOG = LoggerFactory.getLogger(DefaultExecutorRefresher.class);
 
     private final String checkRefreshLink;

@@ -42,8 +42,8 @@ public abstract class AbstractExecutorRefresher implements Refresher {
 
     @Override
     public void refresh() {
-        producerThreadPoolExecutor.scheduleAtFixedRate(this::produce, 3000L, 3000L, TimeUnit.MILLISECONDS);
-        consumerThreadPoolExecutor.scheduleAtFixedRate(this::consume, 0L, 1L, TimeUnit.MILLISECONDS);
+        producerThreadPoolExecutor.scheduleWithFixedDelay(this::produce, 3000L, 3000L, TimeUnit.MILLISECONDS);
+        consumerThreadPoolExecutor.scheduleWithFixedDelay(this::consume, 0L, 1L, TimeUnit.MILLISECONDS);
     }
 
     @VisibleForTesting

@@ -17,14 +17,14 @@ public class ThreadPoolConfig {
     @Bean
     public ThreadPoolExecutor dynamicPoolExecutorBean() {
         DynamicThreadPoolExecutor dynamicThreadPoolExecutor =
-                new DynamicThreadPoolExecutor(10, 100, 3, TimeUnit.MINUTES, new LinkedBlockingQueue<>(100));
+                new DynamicThreadPoolExecutor(10, 20, 3, TimeUnit.MINUTES, new LinkedBlockingQueue<>(10));
         dynamicThreadPoolExecutor.setExecutorName("spring demo dynamic thread pool executor bean");
         return dynamicThreadPoolExecutor;
     }
 
     @Bean
     public ThreadPoolExecutor jdkPoolExecutorBean() {
-        ThreadPoolExecutor jdkThreadPoolExecutor = new ThreadPoolExecutor(10, 100, 3, TimeUnit.MINUTES, new LinkedBlockingQueue<>(100));
+        ThreadPoolExecutor jdkThreadPoolExecutor = new ThreadPoolExecutor(10, 20, 3, TimeUnit.MINUTES, new LinkedBlockingQueue<>(10));
         // register poolExecutor
         ExecutorMonitor.register(jdkThreadPoolExecutor);
         return jdkThreadPoolExecutor;

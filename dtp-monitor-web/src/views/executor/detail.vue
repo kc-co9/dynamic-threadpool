@@ -1,15 +1,22 @@
 <template>
   <div class="app-container">
     <el-row>
-      <h4>线程池配置信息</h4>
+      <h4>线程池配置信息(设置)</h4>
       <el-table
-          :data="[dataDetail.executorConfig]"
+          :data="[dataDetail.executorConfigSetting]"
           border
           style="width: 100%">
         <el-table-column align="center" property="corePoolSize" label="核心线程数"></el-table-column>
         <el-table-column align="center" property="maximumPoolSize" label="最大线程数"></el-table-column>
-        <el-table-column align="center" property="keepAliveTime" label="最大存活时间"></el-table-column>
-        <el-table-column align="center" property="rejectedStrategy" label="拒绝策略"></el-table-column>
+        <el-table-column align="center" property="keepAliveTime" label="最大存活时间(秒)"></el-table-column>
+        <el-table-column align="center" property="rejectedStrategy" label="拒绝策略">
+          <template slot-scope="scope">
+            <span v-if="scope.row.rejectedStrategy === 'ABORT_POLICY'">抛出异常</span>
+            <span v-if="scope.row.rejectedStrategy === 'CALLER_RUNS_POLICY'">由调用线程执行</span>
+            <span v-if="scope.row.rejectedStrategy === 'DISCARD_POLICY'">丢弃当前任务</span>
+            <span v-if="scope.row.rejectedStrategy === 'DISCARD_OLDEST_POLICY'">丢弃最旧任务</span>
+          </template>
+        </el-table-column>
         <el-table-column
             align="center"
             label="操作"
@@ -25,43 +32,39 @@
     </el-row>
 
     <el-row>
-      <h4>线程池统计信息</h4>
+      <h4>线程池配置信息(实时)</h4>
       <el-table
-          :data="[dataDetail.executorStatistics]"
+          :data="[dataDetail.executorConfigMonitor]"
           border
           style="width: 100%">
-        <el-table-column
-            prop="queueClass"
-            label="队列类型">
+        <el-table-column align="center" property="corePoolSize" label="核心线程数"></el-table-column>
+        <el-table-column align="center" property="maximumPoolSize" label="最大线程数"></el-table-column>
+        <el-table-column align="center" property="keepAliveTime" label="最大存活时间(秒)"></el-table-column>
+        <el-table-column align="center" property="rejectedStrategy" label="拒绝策略">
+          <template slot-scope="scope">
+            <span v-if="scope.row.rejectedStrategy === 'ABORT_POLICY'">抛出异常</span>
+            <span v-if="scope.row.rejectedStrategy === 'CALLER_RUNS_POLICY'">由调用线程执行</span>
+            <span v-if="scope.row.rejectedStrategy === 'DISCARD_POLICY'">丢弃当前任务</span>
+            <span v-if="scope.row.rejectedStrategy === 'DISCARD_OLDEST_POLICY'">丢弃最旧任务</span>
+          </template>
         </el-table-column>
-        <el-table-column
-            prop="queueNodeCount"
-            label="队列节点数">
-        </el-table-column>
-        <el-table-column
-            prop="queueRemainingCapacity"
-            label="队列剩余容量">
-        </el-table-column>
-        <el-table-column
-            prop="poolSize"
-            label="当前线程数">
-        </el-table-column>
-        <el-table-column
-            prop="largestPoolSize"
-            label="最大线程数（历史）">
-        </el-table-column>
-        <el-table-column
-            prop="activeCount"
-            label="执行中线程数">
-        </el-table-column>
-        <el-table-column
-            prop="taskCount"
-            label="已调度任务数">
-        </el-table-column>
-        <el-table-column
-            prop="completedTaskCount"
-            label="已完成任务数">
-        </el-table-column>
+      </el-table>
+    </el-row>
+
+    <el-row>
+      <h4>线程池统计信息(实时)</h4>
+      <el-table
+          :data="[dataDetail.executorStatisticsMonitor]"
+          border
+          style="width: 100%">
+        <el-table-column prop="queueClass" label="队列类型"></el-table-column>
+        <el-table-column prop="queueNodeCount" label="队列节点数"></el-table-column>
+        <el-table-column prop="queueRemainingCapacity" label="队列剩余容量"></el-table-column>
+        <el-table-column prop="poolSize" label="当前线程数"></el-table-column>
+        <el-table-column prop="largestPoolSize" label="最大线程数（历史）"></el-table-column>
+        <el-table-column prop="activeCount" label="执行中线程数"></el-table-column>
+        <el-table-column prop="taskCount" label="已调度任务数"></el-table-column>
+        <el-table-column prop="completedTaskCount" label="已完成任务数"></el-table-column>
       </el-table>
     </el-row>
 
@@ -69,17 +72,29 @@
       <h4>线程池统计曲线</h4>
       <el-row>
         <el-button-group>
-          <el-button autofocus size="small" type="primary" plain @click="switchStatisticsDuration('IN_15_MINUTES')">最近15分钟
+          <el-button autofocus size="small" type="primary" plain
+                     @click="switchStatisticsDuration('IN_15_MINUTES')">
+            最近15分钟
           </el-button>
-          <el-button size="small" type="primary" plain @click="switchStatisticsDuration('IN_1_HOURS')">最近1小时
+          <el-button size="small" type="primary" plain
+                     @click="switchStatisticsDuration('IN_1_HOURS')">
+            最近1小时
           </el-button>
-          <el-button size="small" type="primary" plain @click="switchStatisticsDuration('IN_1_DAYS')">最近1天
+          <el-button size="small" type="primary" plain
+                     @click="switchStatisticsDuration('IN_1_DAYS')">
+            最近1天
           </el-button>
-          <el-button size="small" type="primary" plain @click="switchStatisticsDuration('IN_7_DAYS')">最近7天
+          <el-button size="small" type="primary" plain
+                     @click="switchStatisticsDuration('IN_7_DAYS')">
+            最近7天
           </el-button>
-          <el-button size="small" type="primary" plain @click="switchStatisticsDuration('IN_14_DAYS')">最近14天
+          <el-button size="small" type="primary" plain
+                     @click="switchStatisticsDuration('IN_14_DAYS')">
+            最近14天
           </el-button>
-          <el-button size="small" type="primary" plain @click="switchStatisticsDuration('IN_30_DAYS')">最近30天
+          <el-button size="small" type="primary" plain
+                     @click="switchStatisticsDuration('IN_30_DAYS')">
+            最近30天
           </el-button>
         </el-button-group>
       </el-row>
@@ -96,11 +111,16 @@
         <el-form-item label="最大线程数">
           <el-input v-model="configureForm.executorConfig.maximumPoolSize" placeHolder="请输入" style="width: 300px"/>
         </el-form-item>
-        <el-form-item label="最大存活时间">
+        <el-form-item label="最大存活时间(秒)">
           <el-input v-model="configureForm.executorConfig.keepAliveTime" placeHolder="请输入" style="width: 300px"/>
         </el-form-item>
         <el-form-item label="拒绝策略">
-          <el-input v-model="configureForm.executorConfig.rejectedStrategy" placeHolder="请输入" style="width: 300px"/>
+          <el-select v-model="configureForm.executorConfig.rejectedStrategy" placeholder="请选择" style="width: 300px">
+            <el-option :key="1" label="抛出异常" value="ABORT_POLICY"></el-option>
+            <el-option :key="2" label="由调用线程执行" value="CALLER_RUNS_POLICY"></el-option>
+            <el-option :key="3" label="丢弃当前任务" value="DISCARD_POLICY"></el-option>
+            <el-option :key="4" label="丢弃最旧任务" value="DISCARD_OLDEST_POLICY"></el-option>
+          </el-select>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -130,8 +150,9 @@ export default {
         executorId: "",
       },
       dataDetail: {
-        executorConfig: null,
-        executorStatistics: null
+        executorConfigSetting: null,
+        executorConfigMonitor: null,
+        executorStatisticsMonitor: null
       },
       tableLoading: false,
       dataStatisticsForm: {
@@ -281,6 +302,7 @@ export default {
           .then((response) => {
             if (response.code === CONSTANTS.SUCCESS_CODE) {
               this.configureVisible = false
+              this.getDetail()
             }
           })
           .catch((err) => {

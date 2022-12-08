@@ -12,9 +12,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ExecutorDetailGetResponse {
 
-    @ApiModelProperty(value = "线程池配置信息")
-    private ExecutorConfigBo executorConfig;
+    @ApiModelProperty(value = "线程池配置信息-设置")
+    private ExecutorConfigBo executorConfigSetting;
 
-    @ApiModelProperty(value = "线程池统计信息")
-    private ExecutorStatisticsBo executorStatistics;
+    @ApiModelProperty(value = "线程池配置信息-实时")
+    private ExecutorConfigBo executorConfigMonitor;
+
+    @ApiModelProperty(value = "线程池统计信息-实时")
+    private ExecutorStatisticsBo executorStatisticsMonitor;
 }

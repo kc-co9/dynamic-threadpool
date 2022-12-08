@@ -26,8 +26,6 @@ public class ExecutorMonitorController {
     private DtpServerService dtpServerService;
     @Autowired
     private DtpExecutorService dtpExecutorService;
-    @Autowired
-    private SpringDomainFactory springDomainFactory;
 
     @Sign
     @ApiOperation(value = "上报线程池配置信息")
@@ -63,11 +61,8 @@ public class ExecutorMonitorController {
     public ExecutorUpdateLookupResponse lookupExecutorUpdate(@ModelAttribute @Validated ExecutorUpdateLookupRequest request) {
         DtpServer server = dtpServerService.getByCode(request.getServerCode())
                 .orElseThrow(() -> new BusinessException("server is down or not exist"));
-        List<ExecutorConfigBo> executorConfigList = dtpExecutorService.lookupExecutorInfo(server.getId(), request.getServerIp());
-        List<ExecutorConfigBo> configResult = executorConfigList.stream()
-                .filter(item -> springDomainFactory.newExecutorMonitor(server.getId(), request.getServerIp()).isChange(item.getExecutorId()))
-                .collect(Collectors.toList());
-        return new ExecutorUpdateLookupResponse(configResult);
+        List<ExecutorConfigBo> result = dtpExecutorService.lookupExecutorUpdate(server.getId(), request.getServerIp());
+        return new ExecutorUpdateLookupResponse(result);
     }
 
 

@@ -3,11 +3,18 @@ package com.share.co.kcl.dtp.core.reporter;
 import com.share.co.kcl.dtp.common.utils.NetworkUtils;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractServerHealthReporter implements Reporter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractServerHealthReporter.class);
+
+    private final ScheduledExecutorService reporterThreadPoolExecutor = new ScheduledThreadPoolExecutor(1);
 
     @Getter
     @Setter
@@ -27,16 +34,14 @@ public abstract class AbstractServerHealthReporter implements Reporter {
 
     @Override
     public void report() {
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    sendReport(serverCode, serverSecret, serverIp);
-                } catch (Exception ignore) {
-                    // ignore any exception
-                }
+        reporterThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+            try {
+                sendReport(serverCode, serverSecret, serverIp);
+            } catch (Exception ex) {
+                // ignore any exception
+                LOG.debug("report server throw exception", ex);
             }
-        }, 0, 3000);
+        }, this.reportDelay(), this.reportPeriod(), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -47,4 +52,18 @@ public abstract class AbstractServerHealthReporter implements Reporter {
      * @return success / false
      */
     protected abstract boolean sendReport(String serverCode, String serverSecret, String serverIp);
+
+    /**
+     * the time to delay first report
+     *
+     * @return milliseconds
+     */
+    protected abstract long reportDelay();
+
+    /**
+     * the period between the termination of one report and the commencement of the next
+     *
+     * @return milliseconds
+     */
+    protected abstract long reportPeriod();
 }

@@ -4,11 +4,9 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.share.co.kcl.dtp.common.constants.ResultCode;
 import com.share.co.kcl.dtp.common.utils.HttpUtils;
-import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,5 +39,15 @@ public class DefaultServerHealthReporter extends AbstractServerHealthReporter {
             return false;
         }
         return true;
+    }
+
+    @Override
+    protected long reportDelay() {
+        return 0;
+    }
+
+    @Override
+    protected long reportPeriod() {
+        return 3000L;
     }
 }

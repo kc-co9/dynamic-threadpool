@@ -41,8 +41,15 @@
                 style="width: 100%">
               <el-table-column align="center" property="corePoolSize" label="核心线程数"></el-table-column>
               <el-table-column align="center" property="maximumPoolSize" label="最大线程数"></el-table-column>
-              <el-table-column align="center" property="keepAliveTime" label="最大存活时间"></el-table-column>
-              <el-table-column align="center" property="rejectedStrategy" label="拒绝策略"></el-table-column>
+              <el-table-column align="center" property="keepAliveTime" label="最大存活时间(秒)"></el-table-column>
+              <el-table-column align="center" property="rejectedStrategy" label="拒绝策略">
+                <template slot-scope="scope">
+                  <span v-if="scope.row.rejectedStrategy === 'ABORT_POLICY'">抛出异常</span>
+                  <span v-if="scope.row.rejectedStrategy === 'CALLER_RUNS_POLICY'">由调用线程执行</span>
+                  <span v-if="scope.row.rejectedStrategy === 'DISCARD_POLICY'">丢弃当前任务</span>
+                  <span v-if="scope.row.rejectedStrategy === 'DISCARD_OLDEST_POLICY'">丢弃最旧任务</span>
+                </template>
+              </el-table-column>
               <el-table-column
                   align="center"
                   label="操作"
@@ -87,11 +94,16 @@
         <el-form-item label="最大线程数">
           <el-input v-model="configureForm.executorConfig.maximumPoolSize" placeHolder="请输入" style="width: 300px"/>
         </el-form-item>
-        <el-form-item label="最大存活时间">
+        <el-form-item label="最大存活时间(秒)">
           <el-input v-model="configureForm.executorConfig.keepAliveTime" placeHolder="请输入" style="width: 300px"/>
         </el-form-item>
         <el-form-item label="拒绝策略">
-          <el-input v-model="configureForm.executorConfig.rejectedStrategy" placeHolder="请输入" style="width: 300px"/>
+          <el-select v-model="configureForm.executorConfig.rejectedStrategy" placeholder="请选择" style="width: 300px">
+            <el-option :key="1" label="抛出异常" value="ABORT_POLICY"></el-option>
+            <el-option :key="2" label="由调用线程执行" value="CALLER_RUNS_POLICY"></el-option>
+            <el-option :key="3" label="丢弃当前任务" value="DISCARD_POLICY"></el-option>
+            <el-option :key="4" label="丢弃最旧任务" value="DISCARD_OLDEST_POLICY"></el-option>
+          </el-select>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -190,6 +202,7 @@ export default {
           .then((response) => {
             if (response.code === CONSTANTS.SUCCESS_CODE) {
               this.configureVisible = false
+              this.pageData();
             }
           })
           .catch((err) => {

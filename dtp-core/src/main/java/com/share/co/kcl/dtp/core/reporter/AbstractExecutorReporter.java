@@ -5,12 +5,21 @@ import com.share.co.kcl.dtp.core.DynamicThreadPoolExecutor;
 import com.share.co.kcl.dtp.core.monitor.ExecutorMonitor;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public abstract class AbstractExecutorReporter<T> implements Reporter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractExecutorReporter.class);
+
+    private final ScheduledExecutorService reporterThreadPoolExecutor = new ScheduledThreadPoolExecutor(1);
 
     @Getter
     @Setter
@@ -30,26 +39,24 @@ public abstract class AbstractExecutorReporter<T> implements Reporter {
 
     @Override
     public void report() {
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    List<T> reportBodies = ExecutorMonitor.watch()
-                            .entrySet()
-                            .stream()
-                            .sorted(Map.Entry.comparingByKey())
-                            .map(entry -> {
-                                String executorId = computeExecutorId(entry);
-                                String executorName = computeExecutorName(entry);
-                                ThreadPoolExecutor executorObject = computeExecutorObject(entry);
-                                return buildReportBodies(executorId, executorName, executorObject);
-                            }).collect(Collectors.toList());
-                    AbstractExecutorReporter.this.sendReport(serverCode, serverSecret, serverIp, reportBodies);
-                } catch (Exception ignore) {
-                    // ignore any exception
-                }
+        reporterThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+            try {
+                List<T> reportBodies = ExecutorMonitor.watch()
+                        .entrySet()
+                        .stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .map(entry -> {
+                            String executorId = computeExecutorId(entry);
+                            String executorName = computeExecutorName(entry);
+                            ThreadPoolExecutor executorObject = computeExecutorObject(entry);
+                            return buildReportBodies(executorId, executorName, executorObject);
+                        }).collect(Collectors.toList());
+                AbstractExecutorReporter.this.sendReport(serverCode, serverSecret, serverIp, reportBodies);
+            } catch (Exception ex) {
+                // ignore any exception
+                LOG.debug("report executor throw exception", ex);
             }
-        }, 1000, 5000);
+        }, this.reportDelay(), this.reportPeriod(), TimeUnit.MILLISECONDS);
     }
 
     private String computeExecutorId(Map.Entry<String, ThreadPoolExecutor> entry) {
@@ -95,4 +102,18 @@ public abstract class AbstractExecutorReporter<T> implements Reporter {
      * @return success / false
      */
     protected abstract boolean sendReport(String serverCode, String serverSecret, String serverIp, List<T> reportBodies);
+
+    /**
+     * the time to delay first report
+     *
+     * @return milliseconds
+     */
+    protected abstract long reportDelay();
+
+    /**
+     * the period between the termination of one report and the commencement of the next
+     *
+     * @return milliseconds
+     */
+    protected abstract long reportPeriod();
 }

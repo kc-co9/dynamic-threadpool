@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -19,9 +21,9 @@ import java.util.concurrent.TimeUnit;
 public class TaskController {
 
     private static final DynamicThreadPoolExecutor dynamicPoolExecutor =
-            new DynamicThreadPoolExecutor(10, 100, 3, TimeUnit.MINUTES, new LinkedBlockingQueue<>(100));
+            new DynamicThreadPoolExecutor(10, 20, 3, TimeUnit.MINUTES, new LinkedBlockingQueue<>(10));
     private static final ThreadPoolExecutor jdkPoolExecutor =
-            new ThreadPoolExecutor(10, 100, 3, TimeUnit.MINUTES, new LinkedBlockingQueue<>(100));
+            new ThreadPoolExecutor(10, 20, 3, TimeUnit.MINUTES, new LinkedBlockingQueue<>(10));
 
     static {
         // set dynamicPoolExecutor name
@@ -38,7 +40,7 @@ public class TaskController {
 
     @ApiOperation(value = "提交动态线程池")
     @PostMapping(value = "/v1/submitDynamicPoolExecutor")
-    public void submitDynamicPoolExecutor() {
+    public Map<String, Object> submitDynamicPoolExecutor() {
         dynamicPoolExecutor.execute(() -> {
             for (int i = 0; i < 100; i++) {
                 try {
@@ -47,11 +49,12 @@ public class TaskController {
                 }
             }
         });
+        return this.exportExecutorConfig(dynamicPoolExecutor);
     }
 
     @ApiOperation(value = "提交JDK线程池")
     @PostMapping(value = "/v1/submitJdkPoolExecutor")
-    public void submitJdkPoolExecutor() {
+    public Map<String, Object> submitJdkPoolExecutor() {
         jdkPoolExecutor.execute(() -> {
             for (int i = 0; i < 100; i++) {
                 try {
@@ -60,11 +63,12 @@ public class TaskController {
                 }
             }
         });
+        return this.exportExecutorConfig(jdkPoolExecutor);
     }
 
     @ApiOperation(value = "提交动态线程池（Bean）")
     @PostMapping(value = "/v1/submitDynamicPoolExecutorBean")
-    public void submitDynamicPoolExecutorBean() {
+    public Map<String, Object> submitDynamicPoolExecutorBean() {
         dynamicPoolExecutorBean.execute(() -> {
             for (int i = 0; i < 100; i++) {
                 try {
@@ -73,11 +77,12 @@ public class TaskController {
                 }
             }
         });
+        return this.exportExecutorConfig(dynamicPoolExecutorBean);
     }
 
     @ApiOperation(value = "提交JDK线程池（Bean）")
     @PostMapping(value = "/v1/submitJdkPoolExecutorBean")
-    public void submitJdkPoolExecutorBean() {
+    public Map<String, Object> submitJdkPoolExecutorBean() {
         jdkPoolExecutorBean.execute(() -> {
             for (int i = 0; i < 100; i++) {
                 try {
@@ -86,5 +91,15 @@ public class TaskController {
                 }
             }
         });
+        return this.exportExecutorConfig(jdkPoolExecutorBean);
+    }
+
+    private Map<String, Object> exportExecutorConfig(ThreadPoolExecutor executor) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("CorePoolSize", executor.getCorePoolSize());
+        result.put("MaximumPoolSize", executor.getMaximumPoolSize());
+        result.put("RejectedExecutionHandler", executor.getRejectedExecutionHandler().getClass().getSimpleName());
+        result.put("KeepAliveTime", executor.getKeepAliveTime(TimeUnit.SECONDS));
+        return result;
     }
 }

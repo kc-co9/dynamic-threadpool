@@ -15,7 +15,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -32,7 +31,7 @@ public class ExecutorConsoleController {
     @ApiOperation(value = "获取线程池配置列表")
     @GetMapping(value = "/v1/getExecutorList")
     public ExecutorSearchResponse getExecutorList(@ModelAttribute @Validated ExecutorSearchRequest request) {
-        List<ExecutorConfigBo> executorConfigList = dtpExecutorService.lookupExecutorInfo(request.getServerId(), request.getServerIp());
+        List<ExecutorConfigBo> executorConfigList = dtpExecutorService.lookupExecutorConfigMonitor(request.getServerId(), request.getServerIp());
         List<ExecutorConfigBo> configResult = executorConfigList.stream()
                 .filter(item -> StringUtils.isBlank(request.getExecutorId()) || item.getExecutorId().equals(request.getExecutorId()))
                 .filter(item -> StringUtils.isBlank(request.getExecutorName()) || item.getExecutorName().equals(request.getExecutorName()))
@@ -44,15 +43,10 @@ public class ExecutorConsoleController {
     @ApiOperation(value = "获取线程池配置详情")
     @GetMapping(value = "/v1/getExecutorDetail")
     public ExecutorDetailGetResponse getExecutorDetail(@ModelAttribute @Validated ExecutorDetailGetRequest request) {
-        List<ExecutorConfigBo> executorConfigList = dtpExecutorService.lookupExecutorInfo(request.getServerId(), request.getServerIp());
-        List<ExecutorStatisticsBo> executorStatisticsList = dtpExecutorService.lookupExecutorStatistics(request.getServerId(), request.getServerIp());
-        Optional<ExecutorConfigBo> executorConfigBo = executorConfigList.stream()
-                .filter(item -> StringUtils.isBlank(request.getExecutorId()) || item.getExecutorId().equals(request.getExecutorId()))
-                .findFirst();
-        Optional<ExecutorStatisticsBo> executorStatisticsBo = executorStatisticsList.stream()
-                .filter(item -> StringUtils.isBlank(request.getExecutorId()) || item.getExecutorId().equals(request.getExecutorId()))
-                .findFirst();
-        return new ExecutorDetailGetResponse(executorConfigBo.orElse(null), executorStatisticsBo.orElse(null));
+        ExecutorConfigBo executorConfigSetting = dtpExecutorService.lookupExecutorConfigSetting(request.getServerId(), request.getServerIp(), request.getExecutorId());
+        ExecutorConfigBo executorConfigMonitor = dtpExecutorService.lookupExecutorConfigMonitor(request.getServerId(), request.getServerIp(), request.getExecutorId());
+        ExecutorStatisticsBo executorStatisticsMonitor = dtpExecutorService.lookupExecutorStatisticsMonitor(request.getServerId(), request.getServerIp(), request.getExecutorId());
+        return new ExecutorDetailGetResponse(executorConfigSetting, executorConfigMonitor, executorStatisticsMonitor);
     }
 
     @Auth
